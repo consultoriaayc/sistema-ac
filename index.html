@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es"> 
+<html lang="es">
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -1115,7 +1115,28 @@ function cambiarTipoAlta(){const tipo=getTipoAlta();['nuevo','seminuevo','forane
 function toggleSeminuevoCambio(){const on=document.getElementById('alta-seminuevo-cambio-chk').checked;document.getElementById('alta-seminuevo-valor-campo').classList.toggle('hidden',!on);document.getElementById('alta-libro-reminder').classList.toggle('hidden',!on);calcAlta();}
 function toggleForaneoBaja(){const on=document.getElementById('alta-foraneo-baja-chk').checked;document.getElementById('alta-foraneo-docs-seccion').classList.toggle('hidden',on);if(on)document.getElementById('alta-foraneo-docs-seccion').classList.remove('active');else document.getElementById('alta-foraneo-docs-seccion').classList.add('active');calcAlta();}
 function toggleForaneoCambio(){const on=document.getElementById('alta-foraneo-cambio-chk').checked;document.getElementById('alta-foraneo-valor-campo').classList.toggle('hidden',!on);document.getElementById('alta-libro-reminder').classList.toggle('hidden',!on);calcAlta();}
-function renderDesglose(containerId,items,total,empresa){const c=document.getElementById(containerId);let html='';if(empresa&&empresa!=='publico'){const nombre=empresa.charAt(0)+empresa.slice(1).toLowerCase();html+=`<div class="empresa-badge">🏢 Precio especial: ${nombre}</div>`;}html+='<div class="desglose">';items.forEach(i=>{html+=`<div class="des-row${i.esIva?' iva-row':''}"><span class="des-label">${i.label}</span><span class="des-val">${mxn(i.val)}</span></div>`;});html+='</div>';html+=`<div class="des-total"><span class="des-total-label">Total estimado</span><span class="des-total-val">${mxn(total)}</span></div>`;c.innerHTML=html;desgloseData={items,total};}
+function renderDesglose(containerId,items,total,empresa){
+  const c=document.getElementById(containerId);
+  let html='';
+  if(empresa&&empresa!=='publico'){
+    const nombre=empresa.charAt(0)+empresa.slice(1).toLowerCase();
+    html+='<div class="empresa-badge">🏢 Precio especial: '+nombre+'</div>';
+  }
+  const clienteMap={alta:'alta-cliente',refrendo:'ref-cliente',cambio:'cam-cliente',placas:'pla-cliente',baja:'baja-cliente',verif:'ver-cliente',permiso:'per-cliente'};
+  const tramiteNombres={alta:'Alta de vehiculo',refrendo:'Refrendo / tenencia',cambio:'Cambio de propietario',placas:'Reposicion de placas',baja:'Baja definitiva',verif:'Verificacion vehicular',permiso:'Permiso de carga'};
+  const clienteVal=tramite&&clienteMap[tramite]?document.getElementById(clienteMap[tramite])?.value?.trim():'';
+  const tramiteVal=tramite&&tramiteNombres[tramite]?tramiteNombres[tramite]:'';
+  html+='<div class="desglose">';
+  if(clienteVal){html+='<div class="des-row" style="background:var(--accent-light);"><span class="des-label" style="color:var(--accent-text);font-weight:700;">Cliente</span><span class="des-val" style="color:var(--accent-text);">'+clienteVal+'</span></div>';}
+  if(tramiteVal){html+='<div class="des-row" style="background:var(--accent-light);"><span class="des-label" style="color:var(--accent-text);font-weight:700;">Tramite</span><span class="des-val" style="color:var(--accent-text);">'+tramiteVal+'</span></div>';}
+  items.forEach(function(i){
+    html+='<div class="des-row'+(i.esIva?' iva-row':'')+'"><span class="des-label">'+i.label+'</span><span class="des-val">'+mxn(i.val)+'</span></div>';
+  });
+  html+='</div>';
+  html+='<div class="des-total"><span class="des-total-label">Total estimado</span><span class="des-total-val">'+mxn(total)+'</span></div>';
+  c.innerHTML=html;
+  desgloseData={items:items,total:total};
+}
 
 function calcAlta(){
   const tipo=getTipoAlta();
