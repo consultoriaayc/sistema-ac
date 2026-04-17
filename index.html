@@ -718,8 +718,48 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
     <button class="filter-tab" onclick="setFilter('pendiente',this)">Pendientes</button>
     <button class="filter-tab" onclick="setFilter('aceptada',this)">Aceptadas</button>
     <button class="filter-tab" onclick="setFilter('perdida',this)">Perdidas</button>
+    <button class="filter-tab" onclick="setFilter('mensajes',this)" style="background:#1e3a5f;color:white;border-color:#1e3a5f;">💬 Mensajes</button>
   </div>
   <div id="cot-list" class="cot-list"></div>
+  <div id="mensajes-panel" style="display:none;">
+
+    <!-- Selector de cotizacion -->
+    <div class="card">
+      <div class="card-title">Selecciona la cotización a dar seguimiento</div>
+      <div class="field">
+        <select id="msg-cot-sel" onchange="onSelCotMsg()" style="width:100%;padding:11px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;font-family:Inter,sans-serif;color:var(--text);background:white;">
+          <option value="">-- Selecciona una cotización pendiente --</option>
+        </select>
+      </div>
+      <div id="msg-cot-info" style="display:none;background:var(--accent-light);border:1px solid var(--accent);border-radius:8px;padding:12px;margin-top:8px;font-size:13px;color:var(--accent-text);line-height:1.7;"></div>
+    </div>
+
+    <!-- Tipo de seguimiento -->
+    <div class="card" id="msg-tipo-card" style="display:none;">
+      <div class="card-title">Tipo de mensaje</div>
+      <div class="tipo-grid" style="grid-template-columns:repeat(3,1fr);">
+        <button class="tipo-btn active" id="msg-tipo-1" onclick="setMsgTipo(1)">1er seguimiento<br><span style="font-size:10px;color:var(--text-3);">Mismo día</span></button>
+        <button class="tipo-btn" id="msg-tipo-2" onclick="setMsgTipo(2)">2do seguimiento<br><span style="font-size:10px;color:var(--text-3);">2 días después</span></button>
+        <button class="tipo-btn" id="msg-tipo-3" onclick="setMsgTipo(3)">3er seguimiento<br><span style="font-size:10px;color:var(--text-3);">1 semana después</span></button>
+      </div>
+    </div>
+
+    <!-- Comentarios del cliente -->
+    <div class="card" id="msg-notas-card" style="display:none;">
+      <div class="card-title">Notas internas del cliente</div>
+      <div style="font-size:12px;color:var(--text-2);margin-bottom:8px;">Estas notas son solo para ti — no aparecen en el mensaje de WhatsApp.</div>
+      <textarea id="msg-notas-cliente" onblur="guardarNotasCot()" style="width:100%;padding:11px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-family:Inter,sans-serif;resize:vertical;min-height:80px;outline:none;" placeholder="Ej. Dijo que lo pensará, tiene dudas del costo, consultará con su esposa..."></textarea>
+      <div style="font-size:11px;color:var(--green);margin-top:4px;display:none;" id="msg-notas-saved">✓ Notas guardadas en la cotización</div>
+    </div>
+
+    <!-- Mensaje generado -->
+    <div class="card" id="msg-resultado-card" style="display:none;">
+      <div class="card-title">Mensaje de seguimiento</div>
+      <div id="msg-texto" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px;font-size:13px;line-height:1.8;color:var(--text);white-space:pre-wrap;font-family:Inter,sans-serif;min-height:100px;"></div>
+      <button onclick="copiarMsgSeguimiento()" id="msg-copy-btn" style="width:100%;margin-top:10px;padding:12px;font-size:13px;font-weight:600;font-family:Inter,sans-serif;background:transparent;border:1.5px solid var(--border-strong);border-radius:var(--radius-sm);cursor:pointer;color:var(--text);display:flex;align-items:center;justify-content:center;gap:6px;">📋 Copiar mensaje para WhatsApp</button>
+    </div>
+
+  </div>
 </div>
 
 <!-- ══════════════════════════════════════════
@@ -1365,19 +1405,13 @@ function enviarASeguimiento(){
 // ════════════════════════════════════════════
 // MÓDULO 2 — SEGUIMIENTO DE COTIZACIONES
 // ════════════════════════════════════════════
-function setFilter(f,btn){
-  cotFilter=f;
-  document.querySelectorAll('.filter-tab').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  renderSeguimiento();
-}
-
 function renderSeguimiento(){
+  if(cotFilter==='mensajes')return;
   const list=document.getElementById('cot-list');
+  list.style.display='flex';
+  document.getElementById('mensajes-panel').style.display='none';
   let filtered=cotizaciones;
   if(cotFilter!=='todas') filtered=cotizaciones.filter(c=>c.estado===cotFilter);
-
-  // Stats
   const pend=cotizaciones.filter(c=>c.estado==='pendiente').length;
   const acept=cotizaciones.filter(c=>c.estado==='aceptada').length;
   const perd=cotizaciones.filter(c=>c.estado==='perdida').length;
@@ -1390,12 +1424,10 @@ function renderSeguimiento(){
   document.getElementById('seg-conv').textContent=conv;
   const as=document.getElementById('seg-alert-stat');
   if(alertN>0){as.style.display='flex';document.getElementById('seg-alert-n').textContent=alertN;}else as.style.display='none';
-
   if(!filtered.length){
-    list.innerHTML=`<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-title">${cotFilter==='todas'?'Sin cotizaciones aún':'Sin cotizaciones en esta categoría'}</div><div class="empty-sub">${cotFilter==='todas'?'Genera una cotización en el cotizador y registrala con el botón verde.':'Prueba cambiando el filtro.'}</div></div>`;
+    list.innerHTML=`<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-title">${cotFilter==='todas'?'Sin cotizaciones aún':'Sin cotizaciones en esta categoría'}</div><div class="empty-sub">${cotFilter==='todas'?'Genera una cotización en el cotizador y regístrala con el botón verde.':'Prueba cambiando el filtro.'}</div></div>`;
     return;
   }
-
   list.innerHTML='';
   filtered.forEach(c=>{
     const days=daysSince(c.ts);
@@ -1403,9 +1435,7 @@ function renderSeguimiento(){
     if(c.estado==='pendiente'){if(days>=5)stale='stale-alert';else if(days>=3)stale='stale-warn';}
     let dClass='dias-ok';
     if(c.estado==='pendiente'){if(days>=5)dClass='dias-alert';else if(days>=3)dClass='dias-warn';}
-
     const estadoPill=c.estado==='pendiente'?`<span class="estado-pill estado-pendiente-pill">⏳ Pendiente</span>`:c.estado==='aceptada'?`<span class="estado-pill estado-aceptada-pill">✅ Aceptada</span>`:`<span class="estado-pill estado-perdida-pill">❌ Perdida</span>`;
-
     const div=document.createElement('div');
     div.className=`cot-card estado-${c.estado} ${stale}`;
     div.innerHTML=`
@@ -1425,7 +1455,25 @@ function renderSeguimiento(){
         ${c.estado==='aceptada'&&c.tipo!=='seguro'?`<button class="cot-btn convert" onclick="convertirATramite('${c.id}')">🗂 Convertir en tramite</button>`:''}
         <button class="cot-btn" onclick="openCotDetail('${c.id}')">Ver detalle</button>
         <button class="cot-btn" style="color:var(--red);border-color:var(--red);" onclick="deleteCot('${c.id}')">Eliminar</button>
-      </div>`;
+      </div>
+      ${c.estado==='pendiente'?`
+      <div style="border-top:1px solid var(--border);margin-top:10px;padding-top:10px;">
+        <div style="font-size:11px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Seguimiento</div>
+        <div style="display:flex;gap:6px;margin-bottom:8px;">
+          <button onclick="marcarSeguimiento('${c.id}',1,event)" style="flex:1;padding:6px 4px;border-radius:6px;border:1.5px solid ${(c.seg1)?'var(--green)':'var(--border)'};background:${(c.seg1)?'var(--green-bg)':'white'};color:${(c.seg1)?'var(--green)':'var(--text-2)'};font-size:11px;font-weight:700;font-family:Inter,sans-serif;cursor:pointer;">
+            ${c.seg1?'✓ 1er env.':'📤 1er msg'}
+          </button>
+          <button onclick="marcarSeguimiento('${c.id}',2,event)" style="flex:1;padding:6px 4px;border-radius:6px;border:1.5px solid ${(c.seg2)?'var(--green)':'var(--border)'};background:${(c.seg2)?'var(--green-bg)':'white'};color:${(c.seg2)?'var(--green)':'var(--text-2)'};font-size:11px;font-weight:700;font-family:Inter,sans-serif;cursor:pointer;">
+            ${c.seg2?'✓ 2do env.':'📤 2do msg'}
+          </button>
+          <button onclick="marcarSeguimiento('${c.id}',3,event)" style="flex:1;padding:6px 4px;border-radius:6px;border:1.5px solid ${(c.seg3)?'var(--green)':'var(--border)'};background:${(c.seg3)?'var(--green-bg)':'white'};color:${(c.seg3)?'var(--green)':'var(--text-2)'};font-size:11px;font-weight:700;font-family:Inter,sans-serif;cursor:pointer;">
+            ${c.seg3?'✓ 3er env.':'📤 3er msg'}
+          </button>
+        </div>
+        <div style="position:relative;">
+          <textarea onblur="guardarNotasTarjeta('${c.id}',this.value)" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;font-family:Inter,sans-serif;resize:none;height:56px;outline:none;color:var(--text);" placeholder="Notas del cliente (solo visibles para ti)...">${c.notas||''}</textarea>
+        </div>
+      </div>`:''}`;
     list.appendChild(div);
   });
 }
@@ -2391,6 +2439,151 @@ function initTablaSeguro(){
     segFilas=[{nombre:'',cobertura:'Amplia',total:0,p1:0,p2:0}];
   }
   renderTablaSeguro();
+}
+
+
+// ════════════════════════════════════════════
+// MENSAJES DE SEGUIMIENTO
+// ════════════════════════════════════════════
+var msgTipo=1;
+var msgCotId=null;
+
+function setFilter(f,btn){
+  cotFilter=f;
+  document.querySelectorAll('#view-seguimiento .filter-tab').forEach(function(b){b.classList.remove('active');});
+  btn.classList.add('active');
+  if(f==='mensajes'){
+    document.getElementById('cot-list').style.display='none';
+    document.getElementById('mensajes-panel').style.display='block';
+    poblarSelectorCot();
+  } else {
+    document.getElementById('cot-list').style.display='flex';
+    document.getElementById('mensajes-panel').style.display='none';
+    renderSeguimiento();
+  }
+}
+
+function poblarSelectorCot(){
+  var sel=document.getElementById('msg-cot-sel');
+  var pendientes=cotizaciones.filter(function(c){return c.estado==='pendiente';});
+  sel.innerHTML='<option value="">-- Selecciona una cotizacion pendiente --</option>'
+    +pendientes.map(function(c){
+      var dias=daysSince(c.ts);
+      var dStr=dias===0?'hoy':dias===1?'ayer':'hace '+dias+' dias';
+      return '<option value="'+c.id+'">'+c.cliente+' — '+c.tramite+' ('+dStr+')</option>';
+    }).join('');
+  document.getElementById('msg-cot-info').style.display='none';
+  document.getElementById('msg-tipo-card').style.display='none';
+  document.getElementById('msg-notas-card').style.display='none';
+  document.getElementById('msg-resultado-card').style.display='none';
+}
+
+function onSelCotMsg(){
+  var sel=document.getElementById('msg-cot-sel');
+  msgCotId=sel.value;
+  if(!msgCotId){
+    document.getElementById('msg-cot-info').style.display='none';
+    document.getElementById('msg-tipo-card').style.display='none';
+    document.getElementById('msg-notas-card').style.display='none';
+    document.getElementById('msg-resultado-card').style.display='none';
+    return;
+  }
+  var c=cotizaciones.find(function(x){return x.id===msgCotId;});
+  if(!c)return;
+  var dias=daysSince(c.ts);
+  var dStr=dias===0?'hoy mismo':dias===1?'hace 1 dia':'hace '+dias+' dias';
+  document.getElementById('msg-cot-info').style.display='block';
+  document.getElementById('msg-cot-info').innerHTML='<strong>Cliente:</strong> '+c.cliente+'<br><strong>Tramite:</strong> '+c.tramite+'<br><strong>Cotizado:</strong> '+fD(c.ts)+' ('+dStr+')';
+  var notasEl=document.getElementById('msg-notas-cliente');
+  if(notasEl)notasEl.value=c.notas||'';
+  // Sugerir tipo de mensaje segun dias
+  var tipoSug=dias<=0?1:dias<=3?2:3;
+  setMsgTipo(tipoSug);
+  document.getElementById('msg-tipo-card').style.display='block';
+  document.getElementById('msg-notas-card').style.display='block';
+  document.getElementById('msg-resultado-card').style.display='block';
+  generarMsgSeguimiento();
+}
+
+function setMsgTipo(t){
+  msgTipo=t;
+  [1,2,3].forEach(function(n){
+    var el=document.getElementById('msg-tipo-'+n);
+    if(el)el.classList.toggle('active',n===t);
+  });
+  generarMsgSeguimiento();
+}
+
+function marcarSeguimiento(id,num,e){
+  e.stopPropagation();
+  var c=cotizaciones.find(function(x){return x.id===id;});
+  if(!c)return;
+  var key='seg'+num;
+  c[key]=!c[key];
+  // Si se marca, registrar fecha
+  if(c[key]) c[key+'fecha']=new Date().toLocaleDateString('es-MX',{day:'2-digit',month:'short'});
+  saveAll();
+  renderSeguimiento();
+}
+
+function guardarNotasTarjeta(id,valor){
+  var c=cotizaciones.find(function(x){return x.id===id;});
+  if(!c)return;
+  c.notas=valor.trim();
+  saveAll();
+}
+
+function guardarNotasCot(){
+  if(!msgCotId)return;
+  var c=cotizaciones.find(function(x){return x.id===msgCotId;});
+  if(!c)return;
+  var notas=document.getElementById('msg-notas-cliente')?.value?.trim()||'';
+  c.notas=notas;
+  saveAll();
+  var saved=document.getElementById('msg-notas-saved');
+  if(saved){saved.style.display='block';setTimeout(function(){saved.style.display='none';},2000);}
+}
+
+function generarMsgSeguimiento(){
+  if(!msgCotId)return;
+  var c=cotizaciones.find(function(x){return x.id===msgCotId;});
+  if(!c)return;
+  var cliente=c.cliente||'';
+  var tramite=c.tramite||'tramite';
+  var NL='\n';
+  var msg='';
+  if(msgTipo===1){
+    msg='Hola '+cliente+' 👋'+NL+NL
+      +'Pudiste revisar la cotizacion del *'+tramite+'*. ¿Te surgio alguna duda sobre el proceso o los documentos?'+NL+NL
+      +'*Consultoria A&C*'+NL+'Automotriz & Seguros';
+  } else if(msgTipo===2){
+    msg='Hola '+cliente+', espero te encuentres bien!'+NL+NL
+      +'¿Tuvo algun contratiempo con los documentos?'+NL+NL
+      +'Si te es mas facil:'+NL
+      +'💳 Aceptamos transferencia SPEI'+NL
+      +'💵 O pagos con tarjetas'+NL+NL
+      +'¿Cual forma de pago te conviene mas?'+NL+NL
+      +'*Consultoria A&C*'+NL+'Automotriz & Seguros';
+  } else {
+    msg=cliente+', buenos dias / buenas tardes.'+NL+NL
+      +'Te escribo para darle seguimiento a tu tramite de *'+tramite+'* 😅'+NL+NL
+      +'¿Se te complico el tema de los documentos o el pago? ¿En que forma te podemos ayudar?'+NL+NL
+      +'*Consultoria A&C*'+NL+'Automotriz & Seguros';
+  }
+  document.getElementById('msg-texto').textContent=msg;
+}
+
+function copiarMsgSeguimiento(){
+  var txt=document.getElementById('msg-texto').textContent;
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(function(){
+      var btn=document.getElementById('msg-copy-btn');
+      btn.textContent='✓ Copiado';
+      setTimeout(function(){btn.textContent='📋 Copiar mensaje para WhatsApp';},2500);
+    }).catch(function(){copiarFallback(txt,'msg-copy-btn');});
+  } else {
+    copiarFallback(txt,'msg-copy-btn');
+  }
 }
 
 // ── INIT ──
