@@ -1412,16 +1412,21 @@ function renderSeguimiento(){
   document.getElementById('mensajes-panel').style.display='none';
   let filtered=cotizaciones;
   if(cotFilter!=='todas') filtered=cotizaciones.filter(c=>c.estado===cotFilter);
+  // Ordenar: pendientes primero, luego aceptadas, convertidas, perdidas
+  filtered=filtered.slice().sort(function(a,b){
+    const orden={pendiente:0,aceptada:1,convertida:2,perdida:3};
+    return (orden[a.estado]||0)-(orden[b.estado]||0);
+  });
   const pend=cotizaciones.filter(c=>c.estado==='pendiente').length;
   const acept=cotizaciones.filter(c=>c.estado==='aceptada').length;
   const perd=cotizaciones.filter(c=>c.estado==='perdida').length;
   const conv=cotizaciones.filter(c=>c.estado==='convertida').length;
   const alertN=cotizaciones.filter(c=>c.estado==='pendiente'&&daysSince(c.ts)>=3).length;
   document.getElementById('seg-total').textContent=cotizaciones.length;
-  document.getElementById('seg-pend').textContent=pend;
-  document.getElementById('seg-acept').textContent=acept;
-  document.getElementById('seg-perd').textContent=perd;
-  document.getElementById('seg-conv').textContent=conv;
+  document.getElementById('seg-pend').textContent=pend||0;
+  document.getElementById('seg-acept').textContent=acept||0;
+  document.getElementById('seg-perd').textContent=perd||0;
+  document.getElementById('seg-conv').textContent=conv||0;
   const as=document.getElementById('seg-alert-stat');
   if(alertN>0){as.style.display='flex';document.getElementById('seg-alert-n').textContent=alertN;}else as.style.display='none';
   if(!filtered.length){
@@ -1435,7 +1440,7 @@ function renderSeguimiento(){
     if(c.estado==='pendiente'){if(days>=5)stale='stale-alert';else if(days>=3)stale='stale-warn';}
     let dClass='dias-ok';
     if(c.estado==='pendiente'){if(days>=5)dClass='dias-alert';else if(days>=3)dClass='dias-warn';}
-    const estadoPill=c.estado==='pendiente'?`<span class="estado-pill estado-pendiente-pill">⏳ Pendiente</span>`:c.estado==='aceptada'?`<span class="estado-pill estado-aceptada-pill">✅ Aceptada</span>`:`<span class="estado-pill estado-perdida-pill">❌ Perdida</span>`;
+    const estadoPill=c.estado==='pendiente'?'<span class="estado-pill estado-pendiente-pill">⏳ Pendiente</span>':c.estado==='aceptada'?'<span class="estado-pill estado-aceptada-pill">✅ Aceptada</span>':c.estado==='convertida'?'<span class="estado-pill" style="background:#eff6ff;color:#1e3a5f;border:1px solid #1e3a5f;">🗂 En tramite</span>':'<span class="estado-pill estado-perdida-pill">❌ Perdida</span>';
     const div=document.createElement('div');
     div.className=`cot-card estado-${c.estado} ${stale}`;
     div.innerHTML=`
