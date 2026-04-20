@@ -496,7 +496,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
     </div>
     <div class="card">
       <div class="card-title">Estado del refrendo</div>
-      <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">¿Ya pagó refrendo 2026?</div><div class="toggle-sub">Si no, se incluye en el total</div></div><label class="switch"><input type="checkbox" id="cam-2026-chk" onchange="calcCambio()"/><span class="slider"></span></label></div>
+      <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">¿Ya pagó refrendo 2026?</div><div class="toggle-sub">No: agrega refrendo $880 · Sí: agrega reimpresión tarjeta $453</div></div><label class="switch"><input type="checkbox" id="cam-2026-chk" onchange="calcCambio()"/><span class="slider"></span></label></div>
       <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">¿Tiene adeudos adicionales?</div><div class="toggle-sub">Multas, verificaciones pendientes</div></div><label class="switch"><input type="checkbox" id="cam-adeudo-chk" onchange="toggleCamAdeudo()"/><span class="slider"></span></label></div>
       <div id="cam-adeudo-campo" class="field mt8 hidden"><label>Monto total de adeudos ($)</label><input type="number" id="cam-adeudo-monto" placeholder="Ingrese el monto" min="0" oninput="calcCambio()"/></div>
     </div>
@@ -533,7 +533,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
     </div>
     <div class="card">
       <div class="card-title">Estado del refrendo</div>
-      <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">¿Ya pagó refrendo 2026?</div><div class="toggle-sub">Si no, se incluye en el total</div></div><label class="switch"><input type="checkbox" id="baja-2026-chk" onchange="calcBaja()"/><span class="slider"></span></label></div>
+      <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">¿Ya pagó refrendo 2026?</div><div class="toggle-sub">No: agrega refrendo $880 · Sí: agrega reimpresión tarjeta $453</div></div><label class="switch"><input type="checkbox" id="baja-2026-chk" onchange="calcBaja()"/><span class="slider"></span></label></div>
       <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">¿Tiene adeudos anteriores?</div><div class="toggle-sub">Verificado en sistema Morelos</div></div><label class="switch"><input type="checkbox" id="baja-adeudo-chk" onchange="toggleBajaAdeudo()"/><span class="slider"></span></label></div>
       <div id="baja-adeudo-campo" class="field mt8 hidden"><label>Monto de adeudos ($)</label><input type="number" id="baja-adeudo-monto" placeholder="Consultado en sistema Morelos" min="0" oninput="calcBaja()"/></div>
       <a href="https://pagos.hacienda.morelos.gob.mx/" target="_blank" class="movilidad-link"><svg viewBox="0 0 24 24"><path d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>Consultar adeudos en sistema Morelos</a>
@@ -1290,7 +1290,11 @@ function calcCambio(){
   const adeudoOn=document.getElementById('cam-adeudo-chk').checked;
   const adeudoMonto=parseFloat(document.getElementById('cam-adeudo-monto').value)||0;
   const items=[];let total=0;let baseIva=0;
-  if(!pago2026){items.push({label:'Refrendo 2026',val:880});total+=880;}
+  if(!pago2026){
+    items.push({label:'Refrendo 2026',val:880});total+=880;
+  } else {
+    items.push({label:'Reimpresion de tarjeta de circulacion',val:453});total+=453;
+  }
   if(valorLibro>0){
     const derechosTC=Math.trunc(valorLibro*0.0125);
     items.push({label:'Derechos traslado de dominio (1.25%)',val:derechosTC});
