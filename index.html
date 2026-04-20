@@ -372,6 +372,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
     </div>
     <div class="card">
       <div class="card-title">Datos del vehículo</div>
+      <div class="field"><label>Tipo de vehículo *</label><select id="alta-veh-tipo" onchange="calcAlta()" style="width:100%;padding:11px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;font-family:Inter,sans-serif;color:var(--text);background:white;"><option value="">Selecciona tipo...</option></select></div>
       <div class="g2">
         <div class="field"><label>Año</label><input type="number" id="alta-veh-anio" placeholder="Ej. 2022" min="1980" max="2030"/></div>
         <div class="field"><label>Marca</label><input type="text" id="alta-veh-marca" placeholder="Ej. Nissan"/></div>
@@ -1168,7 +1169,7 @@ async function cargarTiposVehiculo(){
       }
       cols.push(cur.trim());
       var tipo=(cols[0]||'').replace(/^"|"$/g,'').trim();
-      var derechos=parseFloat(String(cols[1]||'').replace(/["$,\s]/g,''))||0;
+      var rawDer=String(cols[1]||'').replace(/"/g,'').trim();var derechos=parseFloat(rawDer.replace(/,/g,''))||0;
       return{tipo:tipo,derechos:derechos};
     }).filter(function(x){return x.tipo&&x.tipo.toUpperCase()!=='TIPO DE VEHICULO';});
     poblarSelectsTipo();
