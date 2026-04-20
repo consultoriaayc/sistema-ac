@@ -1258,6 +1258,15 @@ function renderDesglose(containerId,items,total,empresa){
   html+='<div class="desglose">';
   if(clienteVal){html+='<div class="des-row" style="background:var(--accent-light);"><span class="des-label" style="color:var(--accent-text);font-weight:700;">Cliente</span><span class="des-val" style="color:var(--accent-text);">'+clienteVal+'</span></div>';}
   if(tramiteVal){html+='<div class="des-row" style="background:var(--accent-light);"><span class="des-label" style="color:var(--accent-text);font-weight:700;">Tramite</span><span class="des-val" style="color:var(--accent-text);">'+tramiteVal+'</span></div>';}
+  // Vehiculo: tipo, marca, modelo
+  var tipoMap={alta:'alta-veh-tipo',placas:'pla-veh-tipo',baja:'baja-veh-tipo',cambio:null,refrendo:null,verif:null,permiso:null};
+  var marcaMap={alta:'alta-veh-marca',placas:'pla-veh-marca',baja:'baja-veh-marca',cambio:'cam-marca',refrendo:null,verif:null,permiso:null};
+  var modeloMap={alta:'alta-veh-modelo',placas:'pla-veh-modelo',baja:'baja-veh-modelo',cambio:'cam-modelo',refrendo:null,verif:null,permiso:null};
+  var tipoVeh=tramite&&tipoMap[tramite]?document.getElementById(tipoMap[tramite])?.value?.trim():'';
+  var marcaVeh=tramite&&marcaMap[tramite]?document.getElementById(marcaMap[tramite])?.value?.trim():'';
+  var modeloVeh=tramite&&modeloMap[tramite]?document.getElementById(modeloMap[tramite])?.value?.trim():'';
+  var vehStr=[tipoVeh,marcaVeh,modeloVeh].filter(Boolean).join(' — ');
+  if(vehStr){html+='<div class="des-row" style="background:var(--accent-light);"><span class="des-label" style="color:var(--accent-text);font-weight:700;">Vehiculo</span><span class="des-val" style="color:var(--accent-text);">'+vehStr+'</span></div>';}
   items.forEach(function(i){
     html+='<div class="des-row'+(i.esIva?' iva-row':'')+'"><span class="des-label">'+i.label+'</span><span class="des-val">'+mxn(i.val)+'</span></div>';
   });
