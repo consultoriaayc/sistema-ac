@@ -371,16 +371,24 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
       <div class="field"><label>Empresa / tipo de cliente</label><select id="alta-empresa" onchange="calcAlta()"></select></div>
     </div>
     <div class="card">
-      <div class="card-title">Valor de factura</div>
-      <div class="field"><label>Valor de factura ($)</label><input type="number" id="alta-valor-general" placeholder="Ej. 1,735,000" min="0" oninput="calcAlta()"/></div>
-      <div class="desc-note">El valor de factura se usa para calcular gratificación cuando supera $1,000,000</div>
+      <div class="card-title">Datos del vehículo</div>
+      <div class="g2">
+        <div class="field"><label>Año</label><input type="number" id="alta-veh-anio" placeholder="Ej. 2022" min="1980" max="2030"/></div>
+        <div class="field"><label>Marca</label><input type="text" id="alta-veh-marca" placeholder="Ej. Nissan"/></div>
+      </div>
+      <div class="g2">
+        <div class="field"><label>Modelo</label><input type="text" id="alta-veh-modelo" placeholder="Ej. Versa"/></div>
+        <div class="field"><label>Versión</label><input type="text" id="alta-veh-version" placeholder="Ej. Sense TM 1.6L"/></div>
+      </div>
     </div>
+
     <div id="alta-seccion-nuevo" class="card">
       <div class="card-title">Datos de factura (Auto nuevo)</div>
       <div class="g2">
         <div class="field"><label>Fecha de factura</label><input type="date" id="alta-fecha" onchange="calcAlta()"/></div>
         <div class="field"><label>Valor de factura ($)</label><input type="number" id="alta-valor" placeholder="Ej. 1,735,000" min="0" oninput="calcAlta()"/></div>
       </div>
+      <div class="desc-note">Si el valor supera $1,000,000 se calcula gratificación del 0.1% redondeado a centenas</div>
       <div id="alta-alerta-dias" class="alert alert-amber hidden mt8"></div>
       <div id="alta-tenencia-campo" class="field mt8 hidden">
         <label>Monto de tenencia ($)</label>
@@ -462,11 +470,21 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
     </div>
     <div class="card">
       <div class="card-title">Vehículos a refrendar</div>
-      <div class="g2">
-        <div class="field"><label>🚗 Autos (cantidad)</label><input type="number" id="ref-autos" placeholder="0" min="0" value="0" oninput="calcRefrendo()"/></div>
-        <div class="field"><label>🏍️ Motos (cantidad)</label><input type="number" id="ref-motos" placeholder="0" min="0" value="0" oninput="calcRefrendo()"/></div>
+      <div class="desc-note" style="margin-bottom:12px;">Autos: $880 c/u • Motos: $469 c/u • Honorarios: $490 por vehículo</div>
+      <div id="ref-lista-veh" style="margin-bottom:10px;"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;align-items:end;" id="ref-nuevo-veh">
+        <div class="field" style="margin:0;"><label>Propietario</label><input type="text" id="ref-veh-prop" placeholder="Nombre"/></div>
+        <div class="field" style="margin:0;"><label>Marca</label><input type="text" id="ref-veh-marca" placeholder="Ej. Nissan"/></div>
+        <div class="field" style="margin:0;"><label>Modelo</label><input type="text" id="ref-veh-modelo" placeholder="Ej. Versa"/></div>
+        <div class="field" style="margin:0;">
+          <label>Tipo</label>
+          <select id="ref-veh-tipo" style="padding:11px 8px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-family:Inter,sans-serif;font-size:13px;width:100%;">
+            <option value="auto">🚗 Auto</option>
+            <option value="moto">🏍️ Moto</option>
+          </select>
+        </div>
       </div>
-      <div class="desc-note">Autos: $880 c/u • Motos: $469 c/u • Honorarios: $490 por vehículo</div>
+      <button onclick="agregarVehRefrendo()" style="width:100%;margin-top:10px;padding:9px;background:var(--accent-light);color:var(--accent-text);border:1.5px dashed var(--accent);border-radius:var(--radius-sm);font-size:13px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">+ Agregar vehículo</button>
       <div class="toggle-row mt8"><div class="toggle-info"><div class="toggle-label">¿Algún vehículo tiene adeudos?</div><div class="toggle-sub">Verificado en el sistema de Morelos</div></div><label class="switch"><input type="checkbox" id="ref-adeudo-chk" onchange="toggleRefAdeudo()"/><span class="slider"></span></label></div>
       <div id="ref-adeudo-campo" class="field mt8 hidden"><label>Monto total de recargos / adeudos ($)</label><input type="number" id="ref-adeudo-monto" placeholder="Suma de todos los adeudos" min="0" oninput="calcRefrendo()"/></div>
     </div>
@@ -512,6 +530,18 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
       <div class="field"><label>Empresa / tipo de cliente</label><select id="pla-empresa" onchange="calcPlacas()"></select></div>
     </div>
     <div class="card">
+      <div class="card-title">Datos del vehículo</div>
+      <div class="field"><label>Tipo de vehículo *</label><select id="pla-veh-tipo" onchange="calcPlacas()" style="width:100%;padding:11px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;font-family:Inter,sans-serif;color:var(--text);background:white;"><option value="">Selecciona tipo...</option></select></div>
+      <div class="g2">
+        <div class="field"><label>Año</label><input type="number" id="pla-veh-anio" placeholder="Ej. 2022" min="1980" max="2030"/></div>
+        <div class="field"><label>Marca</label><input type="text" id="pla-veh-marca" placeholder="Ej. Nissan"/></div>
+      </div>
+      <div class="g2">
+        <div class="field"><label>Modelo</label><input type="text" id="pla-veh-modelo" placeholder="Ej. Versa"/></div>
+        <div class="field"><label>Versión</label><input type="text" id="pla-veh-version" placeholder="Ej. Sense TM 1.6L"/></div>
+      </div>
+    </div>
+    <div class="card">
       <div class="card-title">Estado del refrendo</div>
       <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">¿Ya pagó refrendo 2026?</div><div class="toggle-sub">Verificar antes de iniciar</div></div><label class="switch"><input type="checkbox" id="pla-2026-chk" onchange="togglePla2026()"/><span class="slider"></span></label></div>
       <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">¿Levantamos nosotros el acta de extravio?</div><div class="toggle-sub">Acta $900 + Sellos de no infraccion $880</div></div><label class="switch"><input type="checkbox" id="pla-acta-chk" onchange="calcPlacas()"/><span class="slider"></span></label></div>
@@ -530,6 +560,18 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
       <div class="card-title">Datos</div>
       <div class="field"><label>Nombre del cliente</label><input type="text" id="baja-cliente" placeholder="Ej. Pedro Sánchez"/></div>
       <div class="field"><label>Empresa / tipo de cliente</label><select id="baja-empresa" onchange="calcBaja()"></select></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Datos del vehículo</div>
+      <div class="field"><label>Tipo de vehículo *</label><select id="baja-veh-tipo" onchange="calcBaja()" style="width:100%;padding:11px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;font-family:Inter,sans-serif;color:var(--text);background:white;"><option value="">Selecciona tipo...</option></select></div>
+      <div class="g2">
+        <div class="field"><label>Año</label><input type="number" id="baja-veh-anio" placeholder="Ej. 2022" min="1980" max="2030"/></div>
+        <div class="field"><label>Marca</label><input type="text" id="baja-veh-marca" placeholder="Ej. Nissan"/></div>
+      </div>
+      <div class="g2">
+        <div class="field"><label>Modelo</label><input type="text" id="baja-veh-modelo" placeholder="Ej. Versa"/></div>
+        <div class="field"><label>Versión</label><input type="text" id="baja-veh-version" placeholder="Ej. Sense TM 1.6L"/></div>
+      </div>
     </div>
     <div class="card">
       <div class="card-title">Estado del refrendo</div>
@@ -1032,6 +1074,8 @@ const TRAMITES_RECUPERADOS=[
 
 // Funciona en Claude.ai Y en navegador normal (Netlify, celular, etc.)
 var EN_CLAUDE=(typeof window!=='undefined'&&window.storage&&typeof window.storage.get==='function');
+var TIPOS_VEHICULO=[]; // {tipo, derechos}
+const TIPOS_URL='https://docs.google.com/spreadsheets/d/e/2PACX-1vQnYDy01-NwpKMvnwdeUA0d8wVwzwGCRge1wOoifeQUOOza2XbhlrXin4t6qahuzYyburKfd1OzuLXW/pub?output=csv';
 
 async function sGet(key){
   if(EN_CLAUDE){try{var r=await window.storage.get(key);return r?JSON.parse(r.value):null;}catch(e){return null;}}
@@ -1107,6 +1151,45 @@ function mapTramite(nombre){
   if(/REVISTA/.test(n))return'revista';
   return null;
 }
+async function cargarTiposVehiculo(){
+  try{
+    const res=await fetch(TIPOS_URL+'&t='+Date.now());
+    if(!res.ok)throw new Error();
+    const csv=await res.text();
+    const rows=csv.trim().split('\n').slice(1);
+    TIPOS_VEHICULO=rows.map(function(row){
+      const cols=row.split(',').map(function(c){return c.trim().replace(/^"|"$/g,'');});
+      const derechos=parseFloat(String(cols[1]||'').replace(/[$,\s]/g,''))||0;
+      return{tipo:cols[0]||'',derechos:derechos};
+    }).filter(function(x){return x.tipo;});
+    poblarSelectsTipo();
+  }catch(e){
+    TIPOS_VEHICULO=[];
+    poblarSelectsTipo();
+  }
+}
+
+function poblarSelectsTipo(){
+  var ids=['alta-veh-tipo','pla-veh-tipo','baja-veh-tipo'];
+  ids.forEach(function(id){
+    var sel=document.getElementById(id);
+    if(!sel)return;
+    var cur=sel.value;
+    sel.innerHTML='<option value="">Selecciona tipo...</option>'
+      +TIPOS_VEHICULO.map(function(t){
+        return '<option value="'+t.tipo+'" data-derechos="'+t.derechos+'"'+(t.tipo===cur?' selected':'')+'>'+t.tipo+'</option>';
+      }).join('');
+    if(cur)sel.value=cur;
+  });
+}
+
+function getDerechosPorTipo(selectId){
+  var sel=document.getElementById(selectId);
+  if(!sel||!sel.value)return 1290;
+  var opt=sel.options[sel.selectedIndex];
+  return parseFloat(opt.dataset.derechos)||1290;
+}
+
 async function cargarPrecios(){
   setSyncStatus('loading','Cargando precios...');
   try{
@@ -1181,7 +1264,7 @@ function calcAlta(){
   const factura=document.getElementById('alta-factura-chk').checked;
   const adeudoOn=document.getElementById('alta-adeudo-chk').checked;
   const adeudoMonto=parseFloat(document.getElementById('alta-adeudo-monto').value)||0;
-  const valorGeneral=parseFloat(document.getElementById('alta-valor-general').value)||0;
+  const valorGeneral=0;
   const items=[];let total=0;let baseIva=0;
 
   function gratificacion(valor){
@@ -1212,8 +1295,8 @@ function calcAlta(){
   if(tipo==='nuevo'){
     const tenMonto=procesarTenencia('alta-fecha','alta-alerta-dias','alta-tenencia-campo','alta-tenencia-monto');
     if(tenMonto>0){items.push({label:'Tenencia',val:tenMonto});total+=tenMonto;}
-    items.push({label:'Derechos de alta',val:1290});total+=1290;
-    const valorFact=parseFloat(document.getElementById('alta-valor').value)||valorGeneral;
+    const derAlt=getDerechosPorTipo('alta-veh-tipo');items.push({label:'Derechos de alta',val:derAlt});total+=derAlt;
+    const valorFact=parseFloat(document.getElementById('alta-valor').value)||0;
     const grat=gratificacion(valorFact);
     if(grat>0){items.push({label:'Gratificacion (valor > $999,999)',val:grat});total+=grat;baseIva+=grat;}
     if(adeudoOn&&adeudoMonto>0){items.push({label:'Adeudos adicionales',val:adeudoMonto});total+=adeudoMonto;}
@@ -1226,7 +1309,7 @@ function calcAlta(){
     const actaOn=document.getElementById('alta-sem-acta-chk')?.checked||false;
     const tenMonto=procesarTenencia('alta-sem-fecha','alta-sem-alerta-dias','alta-sem-tenencia-campo','alta-sem-tenencia-monto');
     if(tenMonto>0){items.push({label:'Tenencia',val:tenMonto});total+=tenMonto;}
-    items.push({label:'Derechos de alta',val:1290});total+=1290;
+    const derAlt=getDerechosPorTipo('alta-veh-tipo');items.push({label:'Derechos de alta',val:derAlt});total+=derAlt;
     const valorFact=parseFloat(document.getElementById('alta-sem-valor-fact').value)||valorGeneral;
     const grat=gratificacion(valorFact);
     if(grat>0){items.push({label:'Gratificacion (valor > $999,999)',val:grat});total+=grat;baseIva+=grat;}
@@ -1251,7 +1334,7 @@ function calcAlta(){
     const actaOn=document.getElementById('alta-for-acta-chk')?.checked||false;
     const tenMonto=procesarTenencia('alta-for-fecha','alta-for-alerta-dias','alta-for-tenencia-campo','alta-for-tenencia-monto');
     if(tenMonto>0){items.push({label:'Tenencia',val:tenMonto});total+=tenMonto;}
-    items.push({label:'Derechos de alta',val:1290});total+=1290;
+    const derAlt=getDerechosPorTipo('alta-veh-tipo');items.push({label:'Derechos de alta',val:derAlt});total+=derAlt;
     if(!yaBaja){items.push({label:'Baja foranea',val:528});total+=528;}
     if(actaOn){
       items.push({label:'Acta de extravio',val:600});total+=900;baseIva+=900;
@@ -1276,7 +1359,27 @@ function calcAlta(){
   renderDesglose('alta-desglose',items,total,empresa);
 }
 
-function calcRefrendo(){const empresa=document.getElementById('ref-empresa')?.value||'publico';const p=getP(empresa);const autos=parseInt(document.getElementById('ref-autos').value)||0;const motos=parseInt(document.getElementById('ref-motos').value)||0;const factura=document.getElementById('ref-factura-chk').checked;const adeudoOn=document.getElementById('ref-adeudo-chk').checked;const adeudoMonto=parseFloat(document.getElementById('ref-adeudo-monto').value)||0;const items=[];let total=0;if(autos>0){items.push({label:`Refrendo autos (${autos} × $880)`,val:autos*880});total+=autos*880;}if(motos>0){items.push({label:`Refrendo motos (${motos} × $469)`,val:motos*469});total+=motos*469;}if(adeudoOn&&adeudoMonto>0){items.push({label:'Recargos / adeudos verificados',val:adeudoMonto});total+=adeudoMonto;}const totalVeh=autos+motos;if(totalVeh>0){const hon=p.refrendo*totalVeh;items.push({label:`Honorarios (${totalVeh} × $${p.refrendo})`,val:hon});total+=hon;if(factura){const iva=hon*0.16;items.push({label:'IVA 16% (honorarios)',val:iva,esIva:true});total+=iva;}}renderDesglose('ref-desglose',items,total,empresa);}
+function calcRefrendo(){
+  const empresa=document.getElementById('ref-empresa')?.value||'publico';
+  const p=getP(empresa);
+  const factura=document.getElementById('ref-factura-chk').checked;
+  const adeudoOn=document.getElementById('ref-adeudo-chk').checked;
+  const adeudoMonto=parseFloat(document.getElementById('ref-adeudo-monto').value)||0;
+  const items=[];let total=0;let baseIva=0;
+  const autos=refVehiculos.filter(function(v){return v.tipo==='auto';}).length;
+  const motos=refVehiculos.filter(function(v){return v.tipo==='moto';}).length;
+  if(autos>0){items.push({label:'Refrendo autos ('+autos+' x $880)',val:autos*880});total+=autos*880;}
+  if(motos>0){items.push({label:'Refrendo motos ('+motos+' x $469)',val:motos*469});total+=motos*469;}
+  if(adeudoOn&&adeudoMonto>0){items.push({label:'Recargos / adeudos verificados',val:adeudoMonto});total+=adeudoMonto;}
+  const totalVeh=autos+motos;
+  if(totalVeh>0){
+    const hon=p.refrendo*totalVeh;
+    items.push({label:'Honorarios ('+totalVeh+' x $'+p.refrendo+')',val:hon});total+=hon;baseIva+=hon;
+    if(factura){const iva=Math.round(baseIva*0.16*100)/100;items.push({label:'IVA 16%',val:iva,esIva:true});total+=iva;}
+  }
+  renderDesglose('ref-desglose',items,total,empresa);
+}
+
 function calcCambio(){
   const empresa=document.getElementById('cam-empresa')?.value||'publico';
   const p=getP(empresa);
@@ -1312,7 +1415,7 @@ function calcPlacas(){
   const adeudoMonto=parseFloat(document.getElementById('pla-adeudo-monto').value)||0;
   const actaOn=document.getElementById('pla-acta-chk')?.checked||false;
   const items=[];let total=0;let baseIva=0;
-  items.push({label:'Derechos de alta',val:1290});total+=1290;
+  const derAlt=getDerechosPorTipo('alta-veh-tipo');items.push({label:'Derechos de alta',val:derAlt});total+=derAlt;
   items.push({label:'Derechos de baja',val:235});total+=235;
   if(!pago2026){items.push({label:'Refrendo 2026 pendiente',val:880});total+=880;}
   if(actaOn){
@@ -1334,7 +1437,7 @@ function calcBaja(){
   const adeudoOn=document.getElementById('baja-adeudo-chk').checked;
   const adeudoMonto=parseFloat(document.getElementById('baja-adeudo-monto').value)||0;
   const items=[];let total=0;let baseIva=0;
-  items.push({label:'Derechos de baja definitiva',val:235});total+=235;
+  const derBaj=getDerechosPorTipo('baja-veh-tipo');items.push({label:'Derechos de baja definitiva',val:derBaj||235});total+=(derBaj||235);
   if(!pago2026){items.push({label:'Derechos refrendo 2026',val:880});total+=880;}
   if(adeudoOn&&adeudoMonto>0){items.push({label:'Adeudos anteriores',val:adeudoMonto});total+=adeudoMonto;}
   const hon=p.baja||p.alta||1900;
@@ -2606,8 +2709,45 @@ function copiarMsgSeguimiento(){
   }
 }
 
+
+// ── LISTA VEHICULOS REFRENDO ──
+var refVehiculos=[];
+
+function agregarVehRefrendo(){
+  var prop=document.getElementById('ref-veh-prop').value.trim();
+  var marca=document.getElementById('ref-veh-marca').value.trim();
+  var modelo=document.getElementById('ref-veh-modelo').value.trim();
+  var tipo=document.getElementById('ref-veh-tipo').value;
+  if(!prop&&!marca){alert('Ingresa al menos el propietario o la marca.');return;}
+  refVehiculos.push({prop:prop,marca:marca,modelo:modelo,tipo:tipo});
+  document.getElementById('ref-veh-prop').value='';
+  document.getElementById('ref-veh-marca').value='';
+  document.getElementById('ref-veh-modelo').value='';
+  renderListaRefVeh();
+  calcRefrendo();
+}
+
+function eliminarVehRef(i){
+  refVehiculos.splice(i,1);
+  renderListaRefVeh();
+  calcRefrendo();
+}
+
+function renderListaRefVeh(){
+  var el=document.getElementById('ref-lista-veh');
+  if(!el)return;
+  if(!refVehiculos.length){el.innerHTML='';return;}
+  el.innerHTML=refVehiculos.map(function(v,i){
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--accent-light);border:1px solid var(--accent);border-radius:8px;margin-bottom:6px;font-size:13px;">'
+      +'<span>'+(v.tipo==='auto'?'🚗':'🏍️')+' <strong>'+v.prop+'</strong> — '+v.marca+' '+v.modelo+'</span>'
+      +'<button onclick="eliminarVehRef('+i+')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:14px;padding:0 4px;">✕</button>'
+      +'</div>';
+  }).join('');
+}
+
 // ── INIT ──
 cargarPrecios();
+cargarTiposVehiculo();
 cloudLoad();
 </script>
 </body>
