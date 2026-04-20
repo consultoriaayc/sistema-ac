@@ -704,21 +704,17 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 ══════════════════════════════════════════ -->
 <div id="view-seguimiento" class="main">
   <div class="seg-header">
-    <div class="seg-stats">
-      <div class="seg-stat">Total <strong id="seg-total">0</strong></div>
-      <div class="seg-stat" style="border-color:rgba(245,166,35,0.4);color:#d97706;">Pendientes <strong id="seg-pend">0</strong></div>
-      <div class="seg-stat" style="border-color:rgba(5,150,105,0.4);color:#059669;">Aceptadas <strong id="seg-acept">0</strong></div>
-      <div class="seg-stat" style="border-color:rgba(220,38,38,0.4);color:#dc2626;">Perdidas <strong id="seg-perd">0</strong></div>
-      <div class="seg-stat" style="border-color:rgba(30,58,95,0.4);color:#1e3a5f;">En trámite <strong id="seg-conv">0</strong></div>
-      <div class="seg-stat warn" id="seg-alert-stat" style="display:none">⚠ Sin seguimiento <strong id="seg-alert-n">0</strong></div>
+    <div class="seg-stats" style="flex-wrap:wrap;">
+      <button onclick="setFilter('todas',this)" class="seg-stat" id="btn-todas" style="cursor:pointer;border:1.5px solid var(--border);background:var(--brand-blue);color:white;border-radius:20px;font-family:Inter,sans-serif;">Total <strong id="seg-total">0</strong></button>
+      <button onclick="setFilter('pendiente',this)" class="seg-stat" id="btn-pendiente" style="cursor:pointer;border-color:rgba(245,166,35,0.4);color:#d97706;font-family:Inter,sans-serif;">Pendientes <strong id="seg-pend">0</strong></button>
+      <button onclick="setFilter('aceptada',this)" class="seg-stat" id="btn-aceptada" style="cursor:pointer;border-color:rgba(5,150,105,0.4);color:#059669;font-family:Inter,sans-serif;">Aceptadas <strong id="seg-acept">0</strong></button>
+      <button onclick="setFilter('perdida',this)" class="seg-stat" id="btn-perdida" style="cursor:pointer;border-color:rgba(220,38,38,0.4);color:#dc2626;font-family:Inter,sans-serif;">Perdidas <strong id="seg-perd">0</strong></button>
+      <button onclick="setFilter('convertida',this)" class="seg-stat" id="btn-convertida" style="cursor:pointer;border-color:rgba(30,58,95,0.4);color:#1e3a5f;font-family:Inter,sans-serif;">En trámite <strong id="seg-conv">0</strong></button>
+      <button onclick="setFilter('sin-seguimiento',this)" class="seg-stat warn" id="seg-alert-stat" style="display:none;cursor:pointer;font-family:Inter,sans-serif;">⚠ Sin seguimiento <strong id="seg-alert-n">0</strong></button>
     </div>
   </div>
-  <div class="filter-tabs">
-    <button class="filter-tab active" onclick="setFilter('todas',this)">Todas</button>
-    <button class="filter-tab" onclick="setFilter('pendiente',this)">Pendientes</button>
-    <button class="filter-tab" onclick="setFilter('aceptada',this)">Aceptadas</button>
-    <button class="filter-tab" onclick="setFilter('perdida',this)">Perdidas</button>
-    <button class="filter-tab" onclick="setFilter('mensajes',this)" style="background:#1e3a5f;color:white;border-color:#1e3a5f;">💬 Mensajes</button>
+  <div class="filter-tabs" style="margin-top:8px;">
+    <button class="filter-tab" onclick="setFilter('mensajes',this)" style="background:#1e3a5f;color:white;border-color:#1e3a5f;">💬 Mensajes de seguimiento</button>
   </div>
   <div id="cot-list" class="cot-list"></div>
   <div id="mensajes-panel" style="display:none;">
@@ -1415,7 +1411,11 @@ function renderSeguimiento(){
   list.style.display='flex';
   document.getElementById('mensajes-panel').style.display='none';
   let filtered=cotizaciones;
-  if(cotFilter!=='todas') filtered=cotizaciones.filter(c=>c.estado===cotFilter);
+  if(cotFilter==='sin-seguimiento'){
+    filtered=cotizaciones.filter(function(c){return c.estado==='pendiente'&&daysSince(c.ts)>=3;});
+  } else if(cotFilter!=='todas'){
+    filtered=cotizaciones.filter(function(c){return c.estado===cotFilter;});
+  }
   // Ordenar: pendientes primero, luego aceptadas, convertidas, perdidas
   filtered=filtered.slice().sort(function(a,b){
     const orden={pendiente:0,aceptada:1,convertida:2,perdida:3};
@@ -2459,8 +2459,19 @@ var msgCotId=null;
 
 function setFilter(f,btn){
   cotFilter=f;
+  // Resetear estilos de todos los botones stat
+  ['btn-todas','btn-pendiente','btn-aceptada','btn-perdida','btn-convertida','seg-alert-stat'].forEach(function(id){
+    var el=document.getElementById(id);
+    if(el){el.style.background='';el.style.color=el.dataset.color||'';}
+  });
+  // Resaltar el boton activo
+  if(btn&&btn.classList.contains('seg-stat')){
+    btn.style.background='var(--brand-blue)';
+    btn.style.color='white';
+    btn.style.borderColor='var(--brand-blue)';
+  }
   document.querySelectorAll('#view-seguimiento .filter-tab').forEach(function(b){b.classList.remove('active');});
-  btn.classList.add('active');
+  if(btn&&btn.classList.contains('filter-tab'))btn.classList.add('active');
   if(f==='mensajes'){
     document.getElementById('cot-list').style.display='none';
     document.getElementById('mensajes-panel').style.display='block';
