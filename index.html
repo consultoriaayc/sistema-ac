@@ -286,6 +286,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
     <button class="nav-tab" id="nav-seguimiento" onclick="showView('seguimiento')">📋 Seguimiento <span class="nav-badge" id="badge-seg" style="display:none">0</span></button>
     <button class="nav-tab" id="nav-tablero" onclick="showView('tablero')">🗂 Tablero <span class="nav-badge" id="badge-tab" style="display:none">0</span></button>
     <button class="nav-tab" id="nav-finanzas" onclick="showView('finanzas')">💰 Finanzas</button>
+    <button class="nav-tab" id="nav-clientes" onclick="showView('clientes')">👥 Clientes</button>
   </div>
 </div>
 
@@ -851,6 +852,77 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
   <div id="fin-content"></div>
 </div>
 
+<!-- VISTA CLIENTES -->
+<div id="view-clientes" class="main" style="display:none;">
+
+  <!-- BUSCADOR Y BOTON -->
+  <div style="display:flex;gap:10px;margin-bottom:14px;align-items:center;">
+    <input type="text" id="cli-buscar" placeholder="🔍 Buscar por nombre o teléfono..." oninput="filtrarClientes()" style="flex:1;padding:11px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;font-family:Inter,sans-serif;outline:none;"/>
+    <button onclick="openNuevoCliente()" style="padding:11px 18px;background:var(--brand-blue);color:white;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:700;font-family:Inter,sans-serif;cursor:pointer;white-space:nowrap;">+ Nuevo cliente</button>
+  </div>
+
+  <!-- CONTADOR -->
+  <div id="cli-contador" style="font-size:12px;color:var(--text-2);margin-bottom:12px;"></div>
+
+  <!-- LISTA -->
+  <div id="cli-lista"></div>
+</div>
+
+<!-- MODAL NUEVO/EDITAR CLIENTE -->
+<div class="modal-overlay" id="modal-cliente">
+  <div class="modal">
+    <h2 id="mcli-title">Nuevo cliente</h2>
+    <div class="form-group">
+      <label>Nombre completo *</label>
+      <input id="cli-nombre" type="text" placeholder="Ej. Juan García López"/>
+    </div>
+    <div class="form-group">
+      <label>Teléfono *</label>
+      <input id="cli-telefono" type="tel" placeholder="Ej. 7771234567"/>
+    </div>
+    <div class="form-group">
+      <label>Dirección (opcional)</label>
+      <input id="cli-direccion" type="text" placeholder="Ej. Calle Morelos 123, Cuernavaca"/>
+    </div>
+    <div id="mcli-error" style="display:none;background:var(--red-bg);color:var(--red);border-radius:8px;padding:10px 14px;font-size:13px;margin-top:8px;"></div>
+    <div class="modal-footer">
+      <button class="modal-cancel" onclick="closeMCli()">Cancelar</button>
+      <button class="modal-save" onclick="saveCliente()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DETALLE CLIENTE -->
+<div class="modal-overlay" id="modal-cliente-detail">
+  <div class="modal">
+    <h2 id="mclid-nombre"></h2>
+    <div style="background:var(--bg);border-radius:8px;padding:14px;margin-bottom:14px;">
+      <div style="font-size:13px;color:var(--text-2);margin-bottom:6px;">📱 <span id="mclid-telefono"></span></div>
+      <div id="mclid-dir-wrap"><div style="font-size:13px;color:var(--text-2);">📍 <span id="mclid-direccion"></span></div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">
+      <div style="background:var(--accent-light);border-radius:8px;padding:12px;text-align:center;">
+        <div style="font-size:11px;color:var(--text-2);margin-bottom:4px;">TRÁMITES</div>
+        <div style="font-size:22px;font-weight:700;color:var(--brand-blue);" id="mclid-tramites">0</div>
+      </div>
+      <div style="background:var(--green-bg);border-radius:8px;padding:12px;text-align:center;">
+        <div style="font-size:11px;color:var(--text-2);margin-bottom:4px;">COTIZACIONES</div>
+        <div style="font-size:22px;font-weight:700;color:var(--green);" id="mclid-cotizaciones">0</div>
+      </div>
+    </div>
+    <!-- Vehiculos del cliente -->
+    <div id="mclid-vehiculos-wrap" style="margin-bottom:14px;">
+      <div style="font-size:11px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Vehículos registrados</div>
+      <div id="mclid-vehiculos"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-cancel" onclick="closeMClidDetail()">Cerrar</button>
+      <button class="modal-save" onclick="editarClienteActual()" style="background:var(--amber);">✏️ Editar</button>
+      <button onclick="eliminarClienteActual()" style="padding:12px 20px;background:var(--red);color:white;border:none;border-radius:8px;font-size:14px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">🗑 Eliminar</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL INGRESO -->
 <div class="modal-overlay" id="modal-ingreso">
   <div class="modal">
@@ -1148,6 +1220,12 @@ async function cloudLoad(){
       id:r.id,concepto:r.concepto,monto:r.monto,categoria:r.categoria,
       fecha:r.fecha,notas:r.notas,tramiteId:r.tramite_id,ts:r.ts
     };});
+    // Cargar clientes
+    const cl=await sbGet('clientes');
+    clientes=cl.map(function(r){return{
+      id:r.id,nombre:r.nombre,telefono:r.telefono,
+      direccion:r.direccion||'',ts:r.ts
+    };});
     setSaveInd('ok','Datos cargados ✓');
   }catch(e){
     console.error('Error cargando datos:',e);
@@ -1210,13 +1288,14 @@ function fD(ts){return new Date(ts).toLocaleDateString('es-MX',{day:'2-digit',mo
 
 // ── NAV ──
 function showView(v){
-  ['cotizador','seguimiento','tablero','finanzas'].forEach(x=>{
+  ['cotizador','seguimiento','tablero','finanzas','clientes'].forEach(x=>{
     document.getElementById('view-'+x).style.display=x===v?'block':'none';
     document.getElementById('nav-'+x).classList.toggle('active',x===v);
   });
   if(v==='seguimiento') renderSeguimiento();
   if(v==='tablero') renderBoard();
   if(v==='finanzas') renderFinanzas();
+  if(v==='clientes') renderClientes();
 }
 
 function updateBadges(){
@@ -2960,6 +3039,162 @@ function renderListaRefVeh(){
       +'</div>';
   }).join('');
 }
+
+
+// ════════════════════════════════════════════
+// MÓDULO CLIENTES
+// ════════════════════════════════════════════
+var cliFilter='';
+
+function renderClientes(){
+  var lista=document.getElementById('cli-lista');
+  var contador=document.getElementById('cli-contador');
+  if(!lista)return;
+  var filtered=clientes.filter(function(c){
+    if(!cliFilter)return true;
+    var q=cliFilter.toLowerCase();
+    return c.nombre.toLowerCase().includes(q)||c.telefono.includes(q);
+  });
+  filtered=filtered.slice().sort(function(a,b){return a.nombre.localeCompare(b.nombre);});
+  if(contador)contador.textContent=filtered.length+' cliente'+(filtered.length!==1?'s':'')+(cliFilter?' encontrado'+(filtered.length!==1?'s':''):'');
+  if(!filtered.length){
+    lista.innerHTML='<div class="empty-state"><div class="empty-icon">👥</div><div class="empty-title">'+(cliFilter?'Sin resultados':'Sin clientes registrados')+'</div><div class="empty-sub">'+(cliFilter?'Prueba con otro término':'Agrega tu primer cliente con el botón de arriba.')+'</div></div>';
+    return;
+  }
+  lista.innerHTML=filtered.map(function(c){
+    var nTram=tramites.filter(function(t){return(t.owner||'').toUpperCase()===(c.nombre||'').toUpperCase();}).length;
+    var nCot=cotizaciones.filter(function(x){return(x.cliente||'').toUpperCase()===(c.nombre||'').toUpperCase();}).length;
+    return '<div class="card" style="cursor:pointer;margin-bottom:10px;" data-id="'+c.id+'" onclick="openClienteDetail(this.dataset.id)">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;">'
+      +'<div>'
+      +'<div style="font-size:15px;font-weight:700;color:var(--text);">'+c.nombre+'</div>'
+      +'<div style="font-size:12px;color:var(--text-2);margin-top:3px;">📱 '+c.telefono+(c.direccion?' · 📍 '+c.direccion:'')+'</div>'
+      +'</div>'
+      +'<div style="text-align:right;flex-shrink:0;margin-left:12px;">'
+      +(nTram>0?'<div style="font-size:11px;background:var(--accent-light);color:var(--brand-blue);border-radius:4px;padding:2px 8px;font-weight:700;margin-bottom:3px;">'+nTram+' trámite'+(nTram>1?'s':'')+'</div>':'')
+      +(nCot>0?'<div style="font-size:11px;background:var(--green-bg);color:var(--green);border-radius:4px;padding:2px 8px;font-weight:700;">'+nCot+' cot.'+'</div>':'')
+      +'</div>'
+      +'</div>'
+      +'</div>';
+  }).join('');
+}
+
+function filtrarClientes(){
+  cliFilter=document.getElementById('cli-buscar').value.trim();
+  renderClientes();
+}
+
+function openNuevoCliente(){
+  editingClienteId=null;
+  document.getElementById('mcli-title').textContent='Nuevo cliente';
+  document.getElementById('cli-nombre').value='';
+  document.getElementById('cli-telefono').value='';
+  document.getElementById('cli-direccion').value='';
+  document.getElementById('mcli-error').style.display='none';
+  document.getElementById('modal-cliente').classList.add('open');
+}
+
+function closeMCli(){
+  document.getElementById('modal-cliente').classList.remove('open');
+  editingClienteId=null;
+}
+
+async function saveCliente(){
+  var nombre=document.getElementById('cli-nombre').value.trim().toUpperCase();
+  var telefono=document.getElementById('cli-telefono').value.trim();
+  var direccion=document.getElementById('cli-direccion').value.trim();
+  var errEl=document.getElementById('mcli-error');
+  errEl.style.display='none';
+  if(!nombre||!telefono){errEl.textContent='Nombre y teléfono son obligatorios.';errEl.style.display='block';return;}
+  // Validar unicidad
+  var dupNombre=clientes.find(function(c){return c.nombre===nombre&&c.id!==editingClienteId;});
+  var dupTel=clientes.find(function(c){return c.telefono===telefono&&c.id!==editingClienteId;});
+  if(dupNombre){errEl.textContent='Ya existe un cliente con ese nombre.';errEl.style.display='block';return;}
+  if(dupTel){errEl.textContent='Ya existe un cliente con ese teléfono.';errEl.style.display='block';return;}
+  var cli={id:editingClienteId||uid(),nombre:nombre,telefono:telefono,direccion:direccion,ts:Date.now()};
+  var {error}=await supa.from('clientes').upsert([{
+    id:cli.id,nombre:cli.nombre,telefono:cli.telefono,direccion:cli.direccion,ts:cli.ts
+  }],{onConflict:'id'});
+  if(error){errEl.textContent='Error al guardar: '+error.message;errEl.style.display='block';return;}
+  if(editingClienteId){
+    var idx=clientes.findIndex(function(c){return c.id===editingClienteId;});
+    if(idx>=0)clientes[idx]=cli;
+  } else {
+    clientes.unshift(cli);
+  }
+  closeMCli();
+  closeMClidDetail();
+  renderClientes();
+}
+
+function openClienteDetail(id){
+  detailClienteId=id;
+  var c=clientes.find(function(x){return x.id===id;});
+  if(!c)return;
+  document.getElementById('mclid-nombre').textContent=c.nombre;
+  document.getElementById('mclid-telefono').textContent=c.telefono;
+  var dirWrap=document.getElementById('mclid-dir-wrap');
+  if(c.direccion){dirWrap.style.display='block';document.getElementById('mclid-direccion').textContent=c.direccion;}
+  else{dirWrap.style.display='none';}
+  var nTram=tramites.filter(function(t){return(t.owner||'').toUpperCase()===c.nombre.toUpperCase();}).length;
+  var nCot=cotizaciones.filter(function(x){return(x.cliente||'').toUpperCase()===c.nombre.toUpperCase();}).length;
+  document.getElementById('mclid-tramites').textContent=nTram;
+  document.getElementById('mclid-cotizaciones').textContent=nCot;
+  // Vehiculos del cliente
+  var vehsCliente=vehiculos.filter(function(v){return v.clienteId===id;});
+  var vehEl=document.getElementById('mclid-vehiculos');
+  if(vehsCliente.length){
+    vehEl.innerHTML=vehsCliente.map(function(v){
+      return '<div style="padding:10px 12px;background:var(--accent-light);border:1px solid var(--accent);border-radius:8px;margin-bottom:8px;font-size:13px;">'
+        +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">'
+        +'<span style="font-weight:700;color:var(--brand-blue);">🚗 '+v.marca+' '+v.modelo+' '+v.anio+'</span>'
+        +'<span style="background:var(--brand-blue);color:white;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:700;">'+v.placa+'</span>'
+        +'</div>'
+        +'<div style="font-size:11px;color:var(--text-2);">'
+        +'<span>👤 '+v.propietario+'</span>'
+        +' &nbsp;·&nbsp; '
+        +'<span>Serie: '+v.numeroSerie+'</span>'
+        +'</div>'
+        +'</div>';
+    }).join('');
+    document.getElementById('mclid-vehiculos-wrap').style.display='block';
+  } else {
+    vehEl.innerHTML='<div style="font-size:12px;color:var(--text-3);padding:8px 0;">Sin vehículos registrados aún.</div>';
+    document.getElementById('mclid-vehiculos-wrap').style.display='block';
+  }
+  document.getElementById('modal-cliente-detail').classList.add('open');
+}
+
+function closeMClidDetail(){
+  document.getElementById('modal-cliente-detail').classList.remove('open');
+  detailClienteId=null;
+}
+
+function editarClienteActual(){
+  var c=clientes.find(function(x){return x.id===detailClienteId;});
+  if(!c)return;
+  editingClienteId=c.id;
+  document.getElementById('mcli-title').textContent='Editar cliente';
+  document.getElementById('cli-nombre').value=c.nombre;
+  document.getElementById('cli-telefono').value=c.telefono;
+  document.getElementById('cli-direccion').value=c.direccion||'';
+  document.getElementById('mcli-error').style.display='none';
+  document.getElementById('modal-cliente-detail').classList.remove('open');
+  document.getElementById('modal-cliente').classList.add('open');
+}
+
+async function eliminarClienteActual(){
+  if(!confirm('¿Eliminar este cliente? Esta acción no se puede deshacer.'))return;
+  var {error}=await supa.from('clientes').delete().eq('id',detailClienteId);
+  if(error){alert('Error al eliminar: '+error.message);return;}
+  clientes=clientes.filter(function(c){return c.id!==detailClienteId;});
+  closeMClidDetail();
+  renderClientes();
+}
+
+// Cerrar modales al click fuera
+document.getElementById('modal-cliente').addEventListener('click',function(e){if(e.target.id==='modal-cliente')closeMCli();});
+document.getElementById('modal-cliente-detail').addEventListener('click',function(e){if(e.target.id==='modal-cliente-detail')closeMClidDetail();});
 
 // ── INIT ──
 cargarPrecios();
