@@ -1262,6 +1262,9 @@ function renderDesglose(containerId,items,total,empresa){
   const clienteVal=tramite&&clienteMap[tramite]?document.getElementById(clienteMap[tramite])?.value?.trim():'';
   const tramiteVal=tramite&&tramiteNombres[tramite]?tramiteNombres[tramite]:'';
   html+='<div class="desglose">';
+  // Folio: tomar el ultimo folio generado o generar preview
+  var folioPreview=generarFolio();
+  html+='<div class="des-row" style="background:var(--brand-blue);"><span class="des-label" style="color:white;font-weight:700;">Folio</span><span class="des-val" style="color:white;font-weight:700;">'+folioPreview+'</span></div>';
   if(clienteVal){html+='<div class="des-row" style="background:var(--accent-light);"><span class="des-label" style="color:var(--accent-text);font-weight:700;">Cliente</span><span class="des-val" style="color:var(--accent-text);">'+clienteVal+'</span></div>';}
   if(tramiteVal){html+='<div class="des-row" style="background:var(--accent-light);"><span class="des-label" style="color:var(--accent-text);font-weight:700;">Tramite</span><span class="des-val" style="color:var(--accent-text);">'+tramiteVal+'</span></div>';}
   // Vehiculo: tipo, marca, modelo
