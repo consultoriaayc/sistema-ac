@@ -1516,13 +1516,19 @@ function generarFolio(){
   var anio=String(now.getFullYear()).slice(2);
   var mes=String(now.getMonth()+1).padStart(2,'0');
   var prefix='COT-'+anio+mes+'-';
+  var mesActual=anio+mes;
+  // Mes actual arranca en 22 si no hay folios previos del mes
+  var INICIO_MES_ACTUAL=22;
   var max=0;
+  var hayFoliosMes=false;
   cotizaciones.forEach(function(c){
     if(c.folio&&c.folio.startsWith(prefix)){
       var n=parseInt(c.folio.replace(prefix,''))||0;
       if(n>max)max=n;
+      hayFoliosMes=true;
     }
   });
+  if(!hayFoliosMes&&mesActual==='2604') max=INICIO_MES_ACTUAL-1;
   return prefix+String(max+1).padStart(3,'0');
 }
 
