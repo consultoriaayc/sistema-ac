@@ -746,6 +746,9 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
      VISTA 2: SEGUIMIENTO DE COTIZACIONES
 ══════════════════════════════════════════ -->
 <div id="view-seguimiento" class="main">
+  <!-- DASHBOARD INDICADORES -->
+  <div id="seg-dashboard" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:14px;"></div>
+
   <div class="seg-header">
     <div class="seg-stats" style="flex-wrap:wrap;">
       <button onclick="setFilter('todas',this)" class="seg-stat" id="btn-todas" style="cursor:pointer;border:1.5px solid var(--border);background:var(--brand-blue);color:white;border-radius:20px;font-family:Inter,sans-serif;">Total <strong id="seg-total">0</strong></button>
@@ -1510,6 +1513,7 @@ function enviarASeguimiento(){
   const c=window._lastCot;
   const nueva={
     id:uid(),
+    folio:generarFolio(),
     cliente:c.cliente||'Sin nombre',
     tramite:c.nombreTramite,
     total:c.total,
@@ -1530,8 +1534,49 @@ function enviarASeguimiento(){
 // ════════════════════════════════════════════
 // MÓDULO 2 — SEGUIMIENTO DE COTIZACIONES
 // ════════════════════════════════════════════
+function renderDashboardCot(){
+  var dash=document.getElementById('seg-dashboard');
+  if(!dash)return;
+  var total=cotizaciones.length;
+  var hoy=new Date().toDateString();
+  var hoyN=cotizaciones.filter(function(c){return new Date(c.ts).toDateString()===hoy;}).length;
+  var conv=cotizaciones.filter(function(c){return c.estado==='convertida';}).length;
+  var pend=cotizaciones.filter(function(c){return c.estado==='pendiente';}).length;
+  var sinSeg=cotizaciones.filter(function(c){return c.estado==='pendiente'&&daysSince(c.ts)>=3;}).length;
+  var tasaConv=total>0?Math.round(conv/total*100):0;
+  var tasaSinSeg=pend>0?Math.round(sinSeg/pend*100):0;
+  // Promedio diario — dias desde primera cotizacion
+  var promDiario=0;
+  if(cotizaciones.length){
+    var oldest=Math.min.apply(null,cotizaciones.map(function(c){return c.ts;}));
+    var dias=Math.max(1,Math.ceil((Date.now()-oldest)/86400000));
+    promDiario=(total/dias).toFixed(1);
+  }
+  // Tramite mas cotizado
+  var porTramite={};
+  cotizaciones.forEach(function(c){
+    var t=c.tramite||'Otro';
+    porTramite[t]=(porTramite[t]||0)+1;
+  });
+  var topTramite=Object.keys(porTramite).sort(function(a,b){return porTramite[b]-porTramite[a];})[0]||'—';
+  var indicadores=[
+    {label:'Cotizaciones hoy',val:hoyN,color:'#1e3a5f',bg:'#eff6ff'},
+    {label:'Tasa conversion',val:tasaConv+'%',color:'#059669',bg:'#ecfdf5'},
+    {label:'Sin seguimiento',val:tasaSinSeg+'%',color:tasaSinSeg>30?'#dc2626':'#d97706',bg:tasaSinSeg>30?'#fef2f2':'#fef3e2'},
+    {label:'Promedio diario',val:promDiario,color:'#7c3aed',bg:'#f5f3ff'},
+    {label:'Mas cotizado',val:topTramite.split(' ')[0],color:'#1e3a5f',bg:'#eff6ff'},
+  ];
+  dash.innerHTML=indicadores.map(function(ind){
+    return '<div style="background:'+ind.bg+';border:1px solid '+ind.color+'22;border-radius:10px;padding:12px 14px;">'
+      +'<div style="font-size:10px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">'+ind.label+'</div>'
+      +'<div style="font-size:20px;font-weight:700;color:'+ind.color+';">'+ind.val+'</div>'
+      +'</div>';
+  }).join('');
+}
+
 function renderSeguimiento(){
   if(cotFilter==='mensajes')return;
+  renderDashboardCot();
   const list=document.getElementById('cot-list');
   list.style.display='flex';
   document.getElementById('mensajes-panel').style.display='none';
@@ -1576,7 +1621,7 @@ function renderSeguimiento(){
       <div class="cot-top">
         <div>
           <div class="cot-cliente">${c.cliente}${c.tipo==='seguro'?' <span style="background:#eff6ff;color:#1e3a5f;border:1px solid #1e3a5f33;border-radius:4px;padding:1px 7px;font-size:10px;font-weight:700;margin-left:4px;">🛡 SEGURO</span>':''}</div>
-          <div class="cot-meta">${fD(c.ts)} ${estadoPill} <span class="dias-pill ${dClass}">${dL(days)}</span></div>
+          <div class="cot-meta">${c.folio?'<span style="font-size:10px;font-weight:700;color:#6b7280;margin-right:4px;">'+c.folio+'</span>':''} ${fD(c.ts)} ${estadoPill} <span class="dias-pill ${dClass}">${dL(days)}</span></div>
         </div>
         <div style="text-align:right">
           <div class="cot-total">${mxn(c.total)}</div>
