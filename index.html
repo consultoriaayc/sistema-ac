@@ -738,7 +738,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
     <div class="card-title">Mensaje listo para WhatsApp</div>
     <div class="result-msg" id="result-text"></div>
     <button class="copy-btn" id="copy-btn" onclick="copiar()">📋 Copiar mensaje</button>
-    <button class="send-cot-btn" id="send-cot-btn" onclick="enviarASeguimiento()">✅ Registrar cotización en seguimiento</button>
+    <button class="send-cot-btn" id="send-cot-btn" onclick="enviarASeguimiento()" style="display:none;">✅ Registrar cotización en seguimiento</button>
   </div>
 </div>
 
@@ -1502,6 +1502,9 @@ function generarMensaje(){
   document.getElementById('result-card').scrollIntoView({behavior:'smooth',block:'nearest'});
   // Guardar datos para seguimiento
   window._lastCot={cliente,nombreTramite,total:desgloseData.total,empresa,mensaje};
+  // Mostrar boton de registrar en seguimiento
+  const sbtn=document.getElementById('send-cot-btn');
+  if(sbtn){sbtn.style.display='block';sbtn.textContent='✅ Registrar cotización en seguimiento';sbtn.style.background='';}
 }
 
 function copiar(){navigator.clipboard.writeText(document.getElementById('result-text').textContent).then(()=>{const btn=document.getElementById('copy-btn');btn.textContent='✓ Copiado';btn.classList.add('ok');setTimeout(()=>{btn.textContent='📋 Copiar mensaje';btn.classList.remove('ok');},2500);});}
