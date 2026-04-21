@@ -1189,7 +1189,7 @@ async function sSet(key,val){
   else{try{localStorage.setItem(key,JSON.stringify(val));return true;}catch(e){return false;}}
 }
 async function cloudLoad(){
-  setSaveInd('loading','Cargando datos...');
+  setSaveInd('saving');
   try{
     // Cargar desde Supabase
     const [t,c,ig,eg]=await Promise.all([
@@ -1226,17 +1226,17 @@ async function cloudLoad(){
       id:r.id,nombre:r.nombre,telefono:r.telefono,
       direccion:r.direccion||'',ts:r.ts
     };});
-    setSaveInd('ok','Datos cargados ✓');
+    setSaveInd('saved');
   }catch(e){
     console.error('Error cargando datos:',e);
-    setSaveInd('err','Error al cargar datos');
+    setSaveInd('err');
   }
   document.getElementById('loading-screen').classList.add('hidden');
   updateBadges();
   poblarMeses();
 }
 async function cloudSave(){
-  setSaveInd('saving','Guardando...');
+  setSaveInd('saving');
   try{
     const tramRows=tramites.map(function(t){return{
       id:t.id,owner:t.owner||'',vehicle:t.vehicle||'',client:t.client||'',
@@ -1265,11 +1265,11 @@ async function cloudSave(){
       sbUpsert('tramites',tramRows),sbUpsert('cotizaciones',cotRows),
       sbUpsert('ingresos',ingRows),sbUpsert('egresos',egrRows)
     ]);
-    if(ok1&&ok2&&ok3&&ok4){setSaveInd('ok','Guardado ✓');}
-    else{setSaveInd('err','Error al guardar');}
+    if(ok1&&ok2&&ok3&&ok4){setSaveInd('saved');}
+    else{setSaveInd('err');}
   }catch(e){
     console.error('Error guardando:',e);
-    setSaveInd('err','Error al guardar');
+    setSaveInd('err');
   }
 }
 function setSaveInd(s){
