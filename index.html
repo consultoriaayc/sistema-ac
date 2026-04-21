@@ -971,9 +971,12 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
       <div class="form-group"><label>Fecha *</label><input id="dep-fecha" type="date"/></div>
       <button onclick="agregarDeposito()" style="width:100%;padding:10px;background:#1e3a5f;color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;font-family:Inter,sans-serif;cursor:pointer;">+ Agregar este depósito</button>
     </div>
-    <div class="modal-footer">
-      <button class="modal-cancel" onclick="closeMDep()">Cerrar</button>
-      <button class="modal-save" onclick="confirmarDepositos()">Guardar y avanzar etapa</button>
+    <div class="modal-footer" style="flex-direction:column;gap:8px;">
+      <div style="display:flex;gap:8px;width:100%;">
+        <button class="modal-cancel" onclick="closeMDep()" style="flex:1;">Cerrar</button>
+        <button class="modal-save" onclick="confirmarDepositos()" style="flex:2;">Guardar y avanzar</button>
+      </div>
+      <button onclick="depositoPendiente()" style="width:100%;padding:10px;background:#d97706;color:white;border:none;border-radius:8px;font-family:Inter,sans-serif;font-size:13px;font-weight:700;cursor:pointer;">⏳ Depósito pendiente — avanzar sin registrar pago</button>
     </div>
   </div>
 </div>
@@ -1701,7 +1704,7 @@ function renderBoard(){
         ${cb}
         <div class="k-bottom">
           <span class="k-days ${dc}">${dL(days)}</span>
-          <span class="k-type">${t.type||''}</span>
+          ${t.depositoPendiente?'<span style="background:#fef3e2;color:#d97706;border-radius:4px;padding:2px 6px;font-size:10px;font-weight:700;">⏳ Pago pend.</span>':`<span class="k-type">${t.type||''}</span>`}
         </div>
         ${finResumen}
         <div class="k-actions">
@@ -1720,11 +1723,35 @@ function renderBoard(){
 function moveT(id,newStage,e){
   e.stopPropagation();
   const t=tramites.find(x=>x.id===id);if(!t)return;
-  // Interceptar etapa deposito
-  if(newStage==='deposito'){openDeposito(id);return;}
-  // Interceptar etapa entrega
+  if(newStage==='deposito'){openOpcionesDeposito(id);return;}
   if(newStage==='entrega'){openGastos(id);return;}
   t.stage=newStage;t.stageTs=Date.now();saveAll();renderBoard();
+}
+
+function openOpcionesDeposito(id){
+  var t=tramites.find(function(x){return x.id===id;});
+  if(!t)return;
+  // Crear modal simple con dos opciones
+  var overlay=document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;z-index:300;background:rgba(0,0,0,0.55);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:16px;';
+  overlay.innerHTML='<div style="background:white;border-radius:14px;padding:28px;width:340px;max-width:100%;box-shadow:0 4px 24px rgba(0,0,0,0.15);">'
+    +'<h2 style="font-size:16px;font-weight:700;color:#1f2937;margin-bottom:8px;">Confirmar depósito</h2>'
+    +'<p style="font-size:13px;color:#6b7280;margin-bottom:20px;line-height:1.6;">'+t.owner+' — '+t.type+'</p>'
+    +'<button id="btn-dep-registrar" style="width:100%;padding:13px;background:#1e3a5f;color:white;border:none;border-radius:8px;font-size:14px;font-weight:700;font-family:Inter,sans-serif;cursor:pointer;margin-bottom:10px;">💳 Registrar depósito ahora</button>'
+    +'<button id="btn-dep-pendiente" style="width:100%;padding:13px;background:white;color:#d97706;border:2px solid #d97706;border-radius:8px;font-size:14px;font-weight:700;font-family:Inter,sans-serif;cursor:pointer;margin-bottom:10px;">⏳ Depósito pendiente</button>'
+    +'<button id="btn-dep-cancel" style="width:100%;padding:10px;background:transparent;color:#9ca3af;border:none;font-size:13px;font-family:Inter,sans-serif;cursor:pointer;">Cancelar</button>'
+    +'</div>';
+  document.body.appendChild(overlay);
+  document.getElementById('btn-dep-registrar').onclick=function(){document.body.removeChild(overlay);openDeposito(id);};
+  document.getElementById('btn-dep-pendiente').onclick=function(){
+    document.body.removeChild(overlay);
+    var tr=tramites.find(function(x){return x.id===id;});
+    if(!tr)return;
+    tr.stage='deposito';tr.stageTs=Date.now();tr.depositoPendiente=true;
+    saveAll();renderBoard();
+  };
+  document.getElementById('btn-dep-cancel').onclick=function(){document.body.removeChild(overlay);};
+  overlay.onclick=function(e){if(e.target===overlay)document.body.removeChild(overlay);};
 }
 function delT(id,e){e.stopPropagation();if(!confirm('¿Eliminar este trámite?'))return;tramites=tramites.filter(x=>x.id!==id);saveAll();renderBoard();}
 
@@ -2214,6 +2241,17 @@ function confirmarDepositos(){
   t.stage='deposito';
   t.stageTs=Date.now();
   cloudSave();
+  closeMDep();
+  renderBoard();
+}
+
+function depositoPendiente(){
+  var t=tramites.find(function(x){return x.id===depTramiteId;});
+  if(!t)return;
+  t.stage='deposito';
+  t.stageTs=Date.now();
+  t.depositoPendiente=true;
+  saveAll();
   closeMDep();
   renderBoard();
 }
