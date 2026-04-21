@@ -3343,10 +3343,11 @@ function alertaVenc(fechaStr,label){
   var dias=diasHasta(fechaStr);
   var color,bg,icono;
   if(dias===null)return '';
-  if(dias<=7){color='#dc2626';bg='#fef2f2';icono='🔴';}
+  if(dias<0){color='#dc2626';bg='#fef2f2';icono='🔴';}
+  else if(dias<=7){color='#dc2626';bg='#fef2f2';icono='🔴';}
   else if(dias<=15){color='#d97706';bg='#fef3e2';icono='🟡';}
   else if(dias<=30){color='#059669';bg='#ecfdf5';icono='🟢';}
-  else{color='#6b7280';bg:'#f9fafb';icono='📅';}
+  else{color='#6b7280';bg='#f9fafb';icono='📅';}
   var texto=dias<0?'Vencido hace '+Math.abs(dias)+' días':dias===0?'Vence hoy':'Vence en '+dias+' día'+(dias!==1?'s':'');
   return '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 10px;background:'+bg+';border-radius:6px;margin-top:4px;font-size:11px;">'
     +'<span style="color:'+color+';font-weight:600;">'+icono+' '+label+'</span>'
@@ -3452,10 +3453,16 @@ async function saveVehiculo(){
 
   if(!clienteId){errEl.textContent='Selecciona un cliente.';errEl.style.display='block';return;}
   if(!serie){errEl.textContent='El número de serie es obligatorio.';errEl.style.display='block';return;}
-  if(!placa){errEl.textContent='La placa es obligatoria.';errEl.style.display='block';return;}
   if(!anio||!marca||!modelo){errEl.textContent='Año, marca y modelo son obligatorios.';errEl.style.display='block';return;}
-  if(!tcVenc){errEl.textContent='La fecha de vencimiento de tarjeta de circulación es obligatoria.';errEl.style.display='block';return;}
+  var version=document.getElementById('veh-version').value.trim();
+  var tipo=document.getElementById('veh-tipo').value;
+  var clave=document.getElementById('veh-clave').value.trim();
+  if(!version){errEl.textContent='La versión es obligatoria.';errEl.style.display='block';return;}
+  if(!tipo){errEl.textContent='El tipo de vehículo es obligatorio.';errEl.style.display='block';return;}
+  if(!entidad){errEl.textContent='La entidad es obligatoria.';errEl.style.display='block';return;}
+  if(!clave){errEl.textContent='La clave vehicular es obligatoria.';errEl.style.display='block';return;}
 
+  // Validar serie unica contra base local Y Supabase
   var dupSerie=vehiculos.find(function(v){return v.numeroSerie===serie&&v.id!==editingVehId;});
   if(dupSerie){errEl.textContent='Ya existe un vehículo con ese número de serie.';errEl.style.display='block';return;}
 
@@ -3474,6 +3481,8 @@ async function saveVehiculo(){
     ts:Date.now()
   };
 
+  // Eliminar duplicado si existe con misma serie
+  if(!editingVehId)await supa.from('vehiculos').delete().eq('numero_serie',serie).neq('id','none');
   var {error}=await supa.from('vehiculos').upsert([{
     id:veh.id,cliente_id:veh.clienteId,propietario:veh.propietario,
     numero_serie:veh.numeroSerie,fecha_factura:veh.fechaFactura||null,
@@ -3492,6 +3501,8 @@ async function saveVehiculo(){
     var idx=vehiculos.findIndex(function(v){return v.id===editingVehId;});
     if(idx>=0)vehiculos[idx]=veh;
   } else {
+    // Eliminar duplicado local si existe
+    vehiculos=vehiculos.filter(function(v){return v.numeroSerie!==serie;});
     vehiculos.unshift(veh);
   }
   closeMVeh();
