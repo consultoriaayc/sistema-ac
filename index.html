@@ -287,6 +287,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
     <button class="nav-tab" id="nav-tablero" onclick="showView('tablero')">🗂 Tablero <span class="nav-badge" id="badge-tab" style="display:none">0</span></button>
     <button class="nav-tab" id="nav-finanzas" onclick="showView('finanzas')">💰 Finanzas</button>
     <button class="nav-tab" id="nav-clientes" onclick="showView('clientes')">👥 Clientes</button>
+    <button class="nav-tab" id="nav-vehiculos" onclick="showView('vehiculos')">🚗 Vehículos</button>
   </div>
 </div>
 
@@ -868,6 +869,118 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
   <div id="cli-lista"></div>
 </div>
 
+<!-- VISTA VEHICULOS -->
+<div id="view-vehiculos" class="main" style="display:none;">
+  <div style="display:flex;gap:10px;margin-bottom:14px;align-items:center;">
+    <input type="text" id="veh-buscar" placeholder="🔍 Buscar por placa, serie, marca o propietario..." oninput="filtrarVehiculos()" style="flex:1;padding:11px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;font-family:Inter,sans-serif;outline:none;"/>
+    <button onclick="openNuevoVehiculo()" style="padding:11px 18px;background:var(--brand-blue);color:white;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:700;font-family:Inter,sans-serif;cursor:pointer;white-space:nowrap;">+ Nuevo vehículo</button>
+  </div>
+  <div id="veh-contador" style="font-size:12px;color:var(--text-2);margin-bottom:12px;"></div>
+  <div id="veh-lista"></div>
+</div>
+
+<!-- MODAL NUEVO/EDITAR VEHICULO -->
+<div class="modal-overlay" id="modal-vehiculo">
+  <div class="modal" style="max-width:600px;">
+    <h2 id="mveh-title">Nuevo vehículo</h2>
+    <div style="max-height:70vh;overflow-y:auto;padding-right:4px;">
+
+      <!-- Cliente -->
+      <div class="form-group">
+        <label>Cliente *</label>
+        <select id="veh-cliente-sel" style="width:100%;padding:11px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;font-family:Inter,sans-serif;color:var(--text);background:white;">
+          <option value="">Selecciona un cliente...</option>
+        </select>
+      </div>
+
+      <!-- Propietario -->
+      <div class="form-group">
+        <label>Propietario</label>
+        <input id="veh-propietario" type="text" placeholder="Nombre del propietario del vehículo"/>
+      </div>
+
+      <!-- Serie y Placa -->
+      <div class="g2">
+        <div class="form-group"><label>Número de serie *</label><input id="veh-serie" type="text" placeholder="17 caracteres"/></div>
+        <div class="form-group"><label>Placa *</label><input id="veh-placa" type="text" placeholder="Ej. ABC1234"/></div>
+      </div>
+
+      <!-- Entidad -->
+      <div class="form-group">
+        <label>Entidad *</label>
+        <select id="veh-entidad" style="width:100%;padding:11px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;font-family:Inter,sans-serif;color:var(--text);background:white;">
+          <option value="">Selecciona estado...</option>
+          <option>Aguascalientes</option><option>Baja California</option><option>Baja California Sur</option>
+          <option>Campeche</option><option>Chiapas</option><option>Chihuahua</option>
+          <option>Ciudad de México</option><option>Coahuila</option><option>Colima</option>
+          <option>Durango</option><option>Estado de México</option><option>Guanajuato</option>
+          <option>Guerrero</option><option>Hidalgo</option><option>Jalisco</option>
+          <option>Michoacán</option><option>Morelos</option><option>Nayarit</option>
+          <option>Nuevo León</option><option>Oaxaca</option><option>Puebla</option>
+          <option>Querétaro</option><option>Quintana Roo</option><option>San Luis Potosí</option>
+          <option>Sinaloa</option><option>Sonora</option><option>Tabasco</option>
+          <option>Tamaulipas</option><option>Tlaxcala</option><option>Veracruz</option>
+          <option>Yucatán</option><option>Zacatecas</option>
+        </select>
+      </div>
+
+      <!-- Tipo -->
+      <div class="form-group">
+        <label>Tipo de vehículo *</label>
+        <select id="veh-tipo" style="width:100%;padding:11px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;font-family:Inter,sans-serif;color:var(--text);background:white;">
+          <option value="">Selecciona tipo...</option>
+        </select>
+      </div>
+
+      <!-- Año Marca Modelo Version -->
+      <div class="g2">
+        <div class="form-group"><label>Año *</label><input id="veh-anio" type="number" placeholder="Ej. 2022" min="1980" max="2030"/></div>
+        <div class="form-group"><label>Marca *</label><input id="veh-marca" type="text" placeholder="Ej. Nissan"/></div>
+      </div>
+      <div class="g2">
+        <div class="form-group"><label>Modelo *</label><input id="veh-modelo" type="text" placeholder="Ej. Versa"/></div>
+        <div class="form-group"><label>Versión *</label><input id="veh-version" type="text" placeholder="Ej. Sense TM"/></div>
+      </div>
+
+      <!-- Factura -->
+      <div class="g2">
+        <div class="form-group"><label>Fecha de factura</label><input id="veh-fecha-factura" type="date"/></div>
+        <div class="form-group"><label>Importe de factura ($)</label><input id="veh-importe-factura" type="number" placeholder="0.00" min="0" step="0.01"/></div>
+      </div>
+
+      <!-- Motor y Clave -->
+      <div class="g2">
+        <div class="form-group"><label>Número de motor</label><input id="veh-motor" type="text" placeholder="Ej. ABC123456"/></div>
+        <div class="form-group"><label>Clave vehicular</label><input id="veh-clave" type="text" placeholder="Ej. 3GNEK"/></div>
+      </div>
+
+      <!-- Vencimientos -->
+      <div style="background:var(--accent-light);border:1px solid var(--accent);border-radius:8px;padding:14px;margin-bottom:14px;">
+        <div style="font-size:11px;font-weight:700;color:var(--accent-text);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;">Vencimientos</div>
+        <div class="form-group"><label>Tarjeta de circulación — vencimiento *</label><input id="veh-tc-venc" type="date"/></div>
+        <div class="g2">
+          <div class="form-group"><label>Aseguradora</label>
+            <select id="veh-aseguradora" style="width:100%;padding:11px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;font-family:Inter,sans-serif;color:var(--text);background:white;">
+              <option value="">Sin aseguradora</option>
+              <option>ANA</option><option>QUALITAS</option><option>HDI</option>
+              <option>GNP</option><option>CHUBB</option><option>MAPFRE</option>
+              <option>AXA</option><option>BANORTE</option><option>ZURICH</option><option>Otra</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Póliza vigencia</label><input id="veh-poliza-venc" type="date"/></div>
+        </div>
+        <div class="form-group"><label>Verificación vigencia</label><input id="veh-verif-venc" type="date"/></div>
+      </div>
+
+    </div>
+    <div id="mveh-error" style="display:none;background:var(--red-bg);color:var(--red);border-radius:8px;padding:10px 14px;font-size:13px;margin-top:8px;"></div>
+    <div class="modal-footer">
+      <button class="modal-cancel" onclick="closeMVeh()">Cancelar</button>
+      <button class="modal-save" onclick="saveVehiculo()">Guardar vehículo</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL NUEVO/EDITAR CLIENTE -->
 <div class="modal-overlay" id="modal-cliente">
   <div class="modal">
@@ -1226,6 +1339,19 @@ async function cloudLoad(){
       id:r.id,nombre:r.nombre,telefono:r.telefono,
       direccion:r.direccion||'',ts:r.ts
     };});
+    // Cargar vehiculos
+    const vh=await sbGet('vehiculos');
+    vehiculos=vh.map(function(r){return{
+      id:r.id,clienteId:r.cliente_id,propietario:r.propietario||'',
+      numeroSerie:r.numero_serie||'',fechaFactura:r.fecha_factura||'',
+      importeFactura:r.importe_factura||0,anio:r.anio||'',marca:r.marca||'',
+      modelo:r.modelo||'',version:r.version||'',tipo:r.tipo||'',
+      placa:r.placa||'',entidad:r.entidad||'',numeroMotor:r.numero_motor||'',
+      claveVehicular:r.clave_vehicular||'',
+      tarjetaCirculacionVencimiento:r.tarjeta_circulacion_vencimiento||'',
+      aseguradora:r.aseguradora||'',polizaVigencia:r.poliza_vigencia||'',
+      verificacionVigencia:r.verificacion_vigencia||'',ts:r.ts
+    };});
     setSaveInd('saved');
   }catch(e){
     console.error('Error cargando datos:',e);
@@ -1288,7 +1414,7 @@ function fD(ts){return new Date(ts).toLocaleDateString('es-MX',{day:'2-digit',mo
 
 // ── NAV ──
 function showView(v){
-  ['cotizador','seguimiento','tablero','finanzas','clientes'].forEach(x=>{
+  ['cotizador','seguimiento','tablero','finanzas','clientes','vehiculos'].forEach(x=>{
     document.getElementById('view-'+x).style.display=x===v?'block':'none';
     document.getElementById('nav-'+x).classList.toggle('active',x===v);
   });
@@ -1296,6 +1422,7 @@ function showView(v){
   if(v==='tablero') renderBoard();
   if(v==='finanzas') renderFinanzas();
   if(v==='clientes') renderClientes();
+  if(v==='vehiculos') renderVehiculos();
 }
 
 function updateBadges(){
@@ -3195,6 +3322,211 @@ async function eliminarClienteActual(){
 // Cerrar modales al click fuera
 document.getElementById('modal-cliente').addEventListener('click',function(e){if(e.target.id==='modal-cliente')closeMCli();});
 document.getElementById('modal-cliente-detail').addEventListener('click',function(e){if(e.target.id==='modal-cliente-detail')closeMClidDetail();});
+
+
+// ════════════════════════════════════════════
+// MÓDULO VEHÍCULOS
+// ════════════════════════════════════════════
+var vehFilter='';
+var editingVehId=null;
+
+function diasHasta(fechaStr){
+  if(!fechaStr)return null;
+  var d=new Date(fechaStr+'T12:00:00');
+  var hoy=new Date();
+  hoy.setHours(0,0,0,0);
+  return Math.ceil((d-hoy)/86400000);
+}
+
+function alertaVenc(fechaStr,label){
+  if(!fechaStr)return '';
+  var dias=diasHasta(fechaStr);
+  var color,bg,icono;
+  if(dias===null)return '';
+  if(dias<=7){color='#dc2626';bg='#fef2f2';icono='🔴';}
+  else if(dias<=15){color='#d97706';bg='#fef3e2';icono='🟡';}
+  else if(dias<=30){color='#059669';bg='#ecfdf5';icono='🟢';}
+  else{color='#6b7280';bg:'#f9fafb';icono='📅';}
+  var texto=dias<0?'Vencido hace '+Math.abs(dias)+' días':dias===0?'Vence hoy':'Vence en '+dias+' día'+(dias!==1?'s':'');
+  return '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 10px;background:'+bg+';border-radius:6px;margin-top:4px;font-size:11px;">'
+    +'<span style="color:'+color+';font-weight:600;">'+icono+' '+label+'</span>'
+    +'<span style="color:'+color+';font-weight:700;">'+fechaStr+' · '+texto+'</span>'
+    +'</div>';
+}
+
+function renderVehiculos(){
+  var lista=document.getElementById('veh-lista');
+  var contador=document.getElementById('veh-contador');
+  if(!lista)return;
+  // Poblar selector de clientes en modal
+  var selCli=document.getElementById('veh-cliente-sel');
+  if(selCli&&clientes.length){
+    selCli.innerHTML='<option value="">Selecciona un cliente...</option>'
+      +clientes.slice().sort(function(a,b){return a.nombre.localeCompare(b.nombre);}).map(function(c){
+        return '<option value="'+c.id+'">'+c.nombre+'</option>';
+      }).join('');
+  }
+  // Poblar selector de tipos
+  var selTipo=document.getElementById('veh-tipo');
+  if(selTipo&&TIPOS_VEHICULO.length){
+    var curTipo=selTipo.value;
+    selTipo.innerHTML='<option value="">Selecciona tipo...</option>'
+      +TIPOS_VEHICULO.map(function(t){return '<option value="'+t.tipo+'"'+(t.tipo===curTipo?' selected':'')+'>'+t.tipo+'</option>';}).join('');
+  }
+  var filtered=vehiculos.filter(function(v){
+    if(!vehFilter)return true;
+    var q=vehFilter.toLowerCase();
+    return (v.placa||'').toLowerCase().includes(q)
+      ||(v.numeroSerie||'').toLowerCase().includes(q)
+      ||(v.marca||'').toLowerCase().includes(q)
+      ||(v.modelo||'').toLowerCase().includes(q)
+      ||(v.propietario||'').toLowerCase().includes(q);
+  });
+  if(contador)contador.textContent=filtered.length+' vehículo'+(filtered.length!==1?'s':'')+(vehFilter?' encontrado'+(filtered.length!==1?'s':''):'');
+  if(!filtered.length){
+    lista.innerHTML='<div class="empty-state"><div class="empty-icon">🚗</div><div class="empty-title">'+(vehFilter?'Sin resultados':'Sin vehículos registrados')+'</div><div class="empty-sub">'+(vehFilter?'Prueba con otro término':'Agrega tu primer vehículo.')+'</div></div>';
+    return;
+  }
+  lista.innerHTML=filtered.map(function(v){
+    var cli=clientes.find(function(c){return c.id===v.clienteId;});
+    var tcAlerta=alertaVenc(v.tarjetaCirculacionVencimiento,'Tarjeta circulación');
+    var segAlerta=alertaVenc(v.polizaVigencia,'Seguro '+(v.aseguradora||''));
+    var verifAlerta=alertaVenc(v.verificacionVigencia,'Verificación');
+    return '<div class="card" style="margin-bottom:10px;cursor:pointer;" data-id="'+v.id+'" onclick="openVehDetail(this.dataset.id)">'
+      +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">'
+      +'<div>'
+      +'<div style="font-size:15px;font-weight:700;color:var(--text);">'+v.marca+' '+v.modelo+' '+v.anio+'</div>'
+      +'<div style="font-size:12px;color:var(--text-2);margin-top:2px;">👤 '+v.propietario+(cli?' · 🏢 '+cli.nombre:'')+'</div>'
+      +'<div style="font-size:11px;color:var(--text-3);margin-top:2px;">Serie: '+v.numeroSerie+'</div>'
+      +'</div>'
+      +'<span style="background:var(--brand-blue);color:white;border-radius:6px;padding:4px 10px;font-size:13px;font-weight:700;flex-shrink:0;">'+v.placa+'</span>'
+      +'</div>'
+      +(tcAlerta||segAlerta||verifAlerta
+        ?'<div>'+tcAlerta+segAlerta+verifAlerta+'</div>'
+        :'')
+      +'</div>';
+  }).join('');
+}
+
+function filtrarVehiculos(){
+  vehFilter=document.getElementById('veh-buscar').value.trim();
+  renderVehiculos();
+}
+
+function openNuevoVehiculo(){
+  editingVehId=null;
+  document.getElementById('mveh-title').textContent='Nuevo vehículo';
+  ['veh-propietario','veh-serie','veh-placa','veh-anio','veh-marca','veh-modelo',
+   'veh-version','veh-fecha-factura','veh-importe-factura','veh-motor','veh-clave',
+   'veh-tc-venc','veh-poliza-venc','veh-verif-venc'].forEach(function(id){
+    var el=document.getElementById(id);if(el)el.value='';
+  });
+  document.getElementById('veh-cliente-sel').value='';
+  document.getElementById('veh-entidad').value='';
+  document.getElementById('veh-tipo').value='';
+  document.getElementById('veh-aseguradora').value='';
+  document.getElementById('mveh-error').style.display='none';
+  renderVehiculos(); // poblar selects
+  document.getElementById('modal-vehiculo').classList.add('open');
+}
+
+function closeMVeh(){
+  document.getElementById('modal-vehiculo').classList.remove('open');
+  editingVehId=null;
+}
+
+async function saveVehiculo(){
+  var clienteId=document.getElementById('veh-cliente-sel').value;
+  var propietario=document.getElementById('veh-propietario').value.trim();
+  var serie=document.getElementById('veh-serie').value.trim().toUpperCase();
+  var placa=document.getElementById('veh-placa').value.trim().toUpperCase();
+  var entidad=document.getElementById('veh-entidad').value;
+  var tipo=document.getElementById('veh-tipo').value;
+  var anio=document.getElementById('veh-anio').value;
+  var marca=document.getElementById('veh-marca').value.trim().toUpperCase();
+  var modelo=document.getElementById('veh-modelo').value.trim().toUpperCase();
+  var version=document.getElementById('veh-version').value.trim();
+  var tcVenc=document.getElementById('veh-tc-venc').value;
+  var errEl=document.getElementById('mveh-error');
+  errEl.style.display='none';
+
+  if(!clienteId){errEl.textContent='Selecciona un cliente.';errEl.style.display='block';return;}
+  if(!serie){errEl.textContent='El número de serie es obligatorio.';errEl.style.display='block';return;}
+  if(!placa){errEl.textContent='La placa es obligatoria.';errEl.style.display='block';return;}
+  if(!anio||!marca||!modelo){errEl.textContent='Año, marca y modelo son obligatorios.';errEl.style.display='block';return;}
+  if(!tcVenc){errEl.textContent='La fecha de vencimiento de tarjeta de circulación es obligatoria.';errEl.style.display='block';return;}
+
+  var dupSerie=vehiculos.find(function(v){return v.numeroSerie===serie&&v.id!==editingVehId;});
+  if(dupSerie){errEl.textContent='Ya existe un vehículo con ese número de serie.';errEl.style.display='block';return;}
+
+  var veh={
+    id:editingVehId||uid(),clienteId:clienteId,propietario:propietario,
+    numeroSerie:serie,fechaFactura:document.getElementById('veh-fecha-factura').value,
+    importeFactura:parseFloat(document.getElementById('veh-importe-factura').value)||0,
+    anio:anio,marca:marca,modelo:modelo,version:version,tipo:tipo,
+    placa:placa,entidad:entidad,
+    numeroMotor:document.getElementById('veh-motor').value.trim(),
+    claveVehicular:document.getElementById('veh-clave').value.trim(),
+    tarjetaCirculacionVencimiento:tcVenc,
+    aseguradora:document.getElementById('veh-aseguradora').value,
+    polizaVigencia:document.getElementById('veh-poliza-venc').value,
+    verificacionVigencia:document.getElementById('veh-verif-venc').value,
+    ts:Date.now()
+  };
+
+  var {error}=await supa.from('vehiculos').upsert([{
+    id:veh.id,cliente_id:veh.clienteId,propietario:veh.propietario,
+    numero_serie:veh.numeroSerie,fecha_factura:veh.fechaFactura||null,
+    importe_factura:veh.importeFactura||null,anio:veh.anio,marca:veh.marca,
+    modelo:veh.modelo,version:veh.version,tipo:veh.tipo,placa:veh.placa,
+    entidad:veh.entidad,numero_motor:veh.numeroMotor||null,
+    clave_vehicular:veh.claveVehicular||null,
+    tarjeta_circulacion_vencimiento:veh.tarjetaCirculacionVencimiento,
+    aseguradora:veh.aseguradora||null,poliza_vigencia:veh.polizaVigencia||null,
+    verificacion_vigencia:veh.verificacionVigencia||null,ts:veh.ts
+  }],{onConflict:'id'});
+
+  if(error){errEl.textContent='Error al guardar: '+error.message;errEl.style.display='block';return;}
+
+  if(editingVehId){
+    var idx=vehiculos.findIndex(function(v){return v.id===editingVehId;});
+    if(idx>=0)vehiculos[idx]=veh;
+  } else {
+    vehiculos.unshift(veh);
+  }
+  closeMVeh();
+  renderVehiculos();
+}
+
+function openVehDetail(id){
+  // Por ahora abrir modal de edicion
+  var v=vehiculos.find(function(x){return x.id===id;});
+  if(!v)return;
+  editingVehId=v.id;
+  document.getElementById('mveh-title').textContent='Editar vehículo';
+  document.getElementById('veh-cliente-sel').value=v.clienteId||'';
+  document.getElementById('veh-propietario').value=v.propietario||'';
+  document.getElementById('veh-serie').value=v.numeroSerie||'';
+  document.getElementById('veh-placa').value=v.placa||'';
+  document.getElementById('veh-entidad').value=v.entidad||'';
+  document.getElementById('veh-tipo').value=v.tipo||'';
+  document.getElementById('veh-anio').value=v.anio||'';
+  document.getElementById('veh-marca').value=v.marca||'';
+  document.getElementById('veh-modelo').value=v.modelo||'';
+  document.getElementById('veh-version').value=v.version||'';
+  document.getElementById('veh-fecha-factura').value=v.fechaFactura||'';
+  document.getElementById('veh-importe-factura').value=v.importeFactura||'';
+  document.getElementById('veh-motor').value=v.numeroMotor||'';
+  document.getElementById('veh-clave').value=v.claveVehicular||'';
+  document.getElementById('veh-tc-venc').value=v.tarjetaCirculacionVencimiento||'';
+  document.getElementById('veh-aseguradora').value=v.aseguradora||'';
+  document.getElementById('veh-poliza-venc').value=v.polizaVigencia||'';
+  document.getElementById('veh-verif-venc').value=v.verificacionVigencia||'';
+  document.getElementById('mveh-error').style.display='none';
+  document.getElementById('modal-vehiculo').classList.add('open');
+}
+
+document.getElementById('modal-vehiculo').addEventListener('click',function(e){if(e.target.id==='modal-vehiculo')closeMVeh();});
 
 // ── INIT ──
 cargarPrecios();
