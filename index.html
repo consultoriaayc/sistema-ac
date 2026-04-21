@@ -254,6 +254,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 .save-ind.saved{color:var(--green);}
 .save-dot{width:6px;height:6px;border-radius:50%;background:currentColor;}
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
@@ -1081,6 +1082,29 @@ const TRAMITES_RECUPERADOS=[
 
 // Funciona en Claude.ai Y en navegador normal (Netlify, celular, etc.)
 var EN_CLAUDE=(typeof window!=='undefined'&&window.storage&&typeof window.storage.get==='function');
+
+// ── SUPABASE CONFIG ──
+const SUPA_URL='https://bcuqhmlvffaxrayhagoc.supabase.co';
+const SUPA_KEY='sb_publishable_HxjgJyjGriuDqd3Un1XCng_gGgzQJky';
+const supa=supabase.createClient(SUPA_URL,SUPA_KEY);
+
+// ── SUPABASE HELPERS ──
+async function sbGet(tabla){
+  const {data,error}=await supa.from(tabla).select('*');
+  if(error){console.error('sbGet error:',tabla,error);return [];}
+  return data||[];
+}
+async function sbUpsert(tabla,rows){
+  if(!rows||!rows.length)return true;
+  const {error}=await supa.from(tabla).upsert(rows,{onConflict:'id'});
+  if(error){console.error('sbUpsert error:',tabla,error);return false;}
+  return true;
+}
+async function sbDelete(tabla,id){
+  const {error}=await supa.from(tabla).delete().eq('id',id);
+  if(error){console.error('sbDelete error:',tabla,error);return false;}
+  return true;
+}
 var TIPOS_VEHICULO=[]; // {tipo, derechos}
 const TIPOS_URL='https://docs.google.com/spreadsheets/d/e/2PACX-1vQnYDy01-NwpKMvnwdeUA0d8wVwzwGCRge1wOoifeQUOOza2XbhlrXin4t6qahuzYyburKfd1OzuLXW/pub?output=csv';
 
@@ -1093,19 +1117,82 @@ async function sSet(key,val){
   else{try{localStorage.setItem(key,JSON.stringify(val));return true;}catch(e){return false;}}
 }
 async function cloudLoad(){
-  var t=await sGet(KEY_TRAM);tramites=t||[];
-  if(tramites.length===0){tramites=TRAMITES_RECUPERADOS;await sSet(KEY_TRAM,tramites);}
-  var c=await sGet(KEY_COT);cotizaciones=c||[];
-  var ig=await sGet(KEY_ING);ingresos=ig||[];
-  var eg=await sGet(KEY_EGR);egresos=eg||[];
+  setSaveInd('loading','Cargando datos...');
+  try{
+    // Cargar desde Supabase
+    const [t,c,ig,eg]=await Promise.all([
+      sbGet('tramites'),sbGet('cotizaciones'),sbGet('ingresos'),sbGet('egresos')
+    ]);
+    tramites=t.map(function(r){return{
+      id:r.id,owner:r.owner,vehicle:r.vehicle,client:r.client,
+      type:r.type,notes:r.notes,stage:r.stage,stageTs:r.stage_ts,
+      createdTs:r.created_ts,cotId:r.cot_id,depositos:r.depositos||[],
+      gastos:r.gastos||[],depositoPendiente:r.deposito_pendiente
+    };});
+    if(tramites.length===0){
+      tramites=TRAMITES_RECUPERADOS;
+      await cloudSave();
+    }
+    cotizaciones=c.map(function(r){return{
+      id:r.id,folio:r.folio,cliente:r.cliente,tramite:r.tramite,
+      total:r.total,empresa:r.empresa,estado:r.estado,tipo:r.tipo,
+      notas:r.notas,seg1:r.seg1,seg2:r.seg2,seg3:r.seg3,
+      seg1fecha:r.seg1fecha,seg2fecha:r.seg2fecha,seg3fecha:r.seg3fecha,ts:r.ts
+    };});
+    ingresos=ig.map(function(r){return{
+      id:r.id,cliente:r.cliente,tramite:r.tramite,total:r.total,
+      honorarios:r.honorarios,cuenta:r.cuenta,fecha:r.fecha,
+      notas:r.notas,tramiteId:r.tramite_id,ts:r.ts
+    };});
+    egresos=eg.map(function(r){return{
+      id:r.id,concepto:r.concepto,monto:r.monto,categoria:r.categoria,
+      fecha:r.fecha,notas:r.notas,tramiteId:r.tramite_id,ts:r.ts
+    };});
+    setSaveInd('ok','Datos cargados ✓');
+  }catch(e){
+    console.error('Error cargando datos:',e);
+    setSaveInd('err','Error al cargar datos');
+  }
   document.getElementById('loading-screen').classList.add('hidden');
   updateBadges();
   poblarMeses();
 }
 async function cloudSave(){
-  setSaveInd('saving');
-  var ok=await sSet(KEY_TRAM,tramites)&&await sSet(KEY_COT,cotizaciones)&&await sSet(KEY_ING,ingresos)&&await sSet(KEY_EGR,egresos);
-  if(ok){setSaveInd('saved');}else{setSaveInd('err');}
+  setSaveInd('saving','Guardando...');
+  try{
+    const tramRows=tramites.map(function(t){return{
+      id:t.id,owner:t.owner||'',vehicle:t.vehicle||'',client:t.client||'',
+      type:t.type||'',notes:t.notes||'',stage:t.stage||'cotizacion',
+      stage_ts:t.stageTs||Date.now(),created_ts:t.createdTs||Date.now(),
+      cot_id:t.cotId||null,depositos:t.depositos||[],
+      gastos:t.gastos||[],deposito_pendiente:t.depositoPendiente||false
+    };});
+    const cotRows=cotizaciones.map(function(c){return{
+      id:c.id,folio:c.folio||null,cliente:c.cliente||'',tramite:c.tramite||'',
+      total:c.total||0,empresa:c.empresa||'publico',estado:c.estado||'pendiente',
+      tipo:c.tipo||null,notas:c.notas||'',seg1:c.seg1||false,seg2:c.seg2||false,
+      seg3:c.seg3||false,seg1fecha:c.seg1fecha||null,seg2fecha:c.seg2fecha||null,
+      seg3fecha:c.seg3fecha||null,ts:c.ts||Date.now()
+    };});
+    const ingRows=ingresos.map(function(i){return{
+      id:i.id,cliente:i.cliente||'',tramite:i.tramite||'',total:i.total||0,
+      honorarios:i.honorarios||0,cuenta:i.cuenta||'',fecha:i.fecha||'',
+      notas:i.notas||'',tramite_id:i.tramiteId||null,ts:i.ts||Date.now()
+    };});
+    const egrRows=egresos.map(function(e){return{
+      id:e.id,concepto:e.concepto||'',monto:e.monto||0,categoria:e.categoria||'',
+      fecha:e.fecha||'',notas:e.notas||'',tramite_id:e.tramiteId||null,ts:e.ts||Date.now()
+    };});
+    const [ok1,ok2,ok3,ok4]=await Promise.all([
+      sbUpsert('tramites',tramRows),sbUpsert('cotizaciones',cotRows),
+      sbUpsert('ingresos',ingRows),sbUpsert('egresos',egrRows)
+    ]);
+    if(ok1&&ok2&&ok3&&ok4){setSaveInd('ok','Guardado ✓');}
+    else{setSaveInd('err','Error al guardar');}
+  }catch(e){
+    console.error('Error guardando:',e);
+    setSaveInd('err','Error al guardar');
+  }
 }
 function setSaveInd(s){
   const ind=document.getElementById('save-ind'),txt=document.getElementById('save-txt');
