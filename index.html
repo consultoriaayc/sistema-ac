@@ -1125,6 +1125,82 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
   </div>
 </div>
 
+<!-- MODAL CONVERTIR A TRAMITE -->
+<div class="modal-overlay" id="modal-cta">
+  <div class="modal" style="max-width:500px;">
+    <h2>Convertir a trámite</h2>
+
+    <!-- Tipo de tramite -->
+    <div class="form-group">
+      <label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:6px;">Tipo de trámite</label>
+      <select id="cta-tramite-tipo" style="width:100%;padding:11px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:Inter,sans-serif;color:var(--text);background:white;">
+        <option>Alta de auto nuevo</option>
+        <option>Alta de seminuevo</option>
+        <option>Alta de foráneo</option>
+        <option>Refrendo / tenencia</option>
+        <option>Cambio de propietario</option>
+        <option>Reposición de placas</option>
+        <option>Baja definitiva</option>
+        <option>Verificación vehicular</option>
+        <option>Permiso de carga</option>
+        <option>Seguro vehicular</option>
+      </select>
+    </div>
+
+    <!-- Buscar vehiculo -->
+    <div style="background:#eff6ff;border:1px solid #1e3a5f22;border-radius:10px;padding:14px;margin-bottom:12px;">
+      <div style="font-size:11px;font-weight:700;color:#1e3a5f;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">🚗 Vehículo</div>
+      <div class="form-group">
+        <label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:6px;">Número de serie <span style="color:#dc2626;">*</span></label>
+        <div style="display:flex;gap:8px;">
+          <input id="cta-serie" type="text" placeholder="Ingresa el número de serie..." style="flex:1;padding:11px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:Inter,sans-serif;outline:none;"/>
+          <button onclick="buscarVehiculoCTA()" style="padding:11px 16px;background:var(--brand-blue);color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;font-family:Inter,sans-serif;cursor:pointer;white-space:nowrap;">Buscar</button>
+        </div>
+      </div>
+      <div id="cta-veh-info" style="display:none;border:1.5px solid #059669;border-radius:8px;padding:10px 12px;font-size:13px;margin-top:4px;"></div>
+    </div>
+
+    <!-- Buscar cliente -->
+    <div style="background:#ecfdf5;border:1px solid #05996922;border-radius:10px;padding:14px;margin-bottom:12px;">
+      <div style="font-size:11px;font-weight:700;color:#059669;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">👤 Cliente</div>
+      <div class="form-group">
+        <label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:6px;">Buscar por nombre o teléfono</label>
+        <div style="display:flex;gap:8px;">
+          <input id="cta-cli-buscar" type="text" placeholder="Nombre o teléfono..." style="flex:1;padding:11px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:Inter,sans-serif;outline:none;"/>
+          <button onclick="buscarClienteCTA()" style="padding:11px 16px;background:#059669;color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;font-family:Inter,sans-serif;cursor:pointer;white-space:nowrap;">Buscar</button>
+        </div>
+      </div>
+      <div id="cta-cli-info" style="display:none;border:1.5px solid #059669;border-radius:8px;padding:10px 12px;font-size:13px;margin-top:4px;"></div>
+    </div>
+
+    <!-- Entidad -->
+    <div class="form-group">
+      <label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:6px;">Entidad</label>
+      <select id="cta-entidad" style="width:100%;padding:11px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:Inter,sans-serif;color:var(--text);background:white;">
+        <option value="">Selecciona estado...</option>
+        <option>Aguascalientes</option><option>Baja California</option><option>Baja California Sur</option>
+        <option>Campeche</option><option>Chiapas</option><option>Chihuahua</option>
+        <option>Ciudad de México</option><option>Coahuila</option><option>Colima</option>
+        <option>Durango</option><option>Estado de México</option><option>Guanajuato</option>
+        <option>Guerrero</option><option>Hidalgo</option><option>Jalisco</option>
+        <option>Michoacán</option><option>Morelos</option><option>Nayarit</option>
+        <option>Nuevo León</option><option>Oaxaca</option><option>Puebla</option>
+        <option>Querétaro</option><option>Quintana Roo</option><option>San Luis Potosí</option>
+        <option>Sinaloa</option><option>Sonora</option><option>Tabasco</option>
+        <option>Tamaulipas</option><option>Tlaxcala</option><option>Veracruz</option>
+        <option>Yucatán</option><option>Zacatecas</option>
+      </select>
+    </div>
+
+    <div id="cta-error" style="display:none;background:var(--red-bg);color:var(--red);border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:8px;"></div>
+
+    <div class="modal-footer">
+      <button class="modal-cancel" onclick="closeMCTA()">Cancelar</button>
+      <button class="modal-save" onclick="confirmarCTA()">✅ Crear trámite</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL DETALLE TRÁMITE -->
 <div class="modal-overlay" id="modal-ktramite">
   <div class="modal">
@@ -1247,7 +1323,9 @@ async function cloudLoad(){
       id:r.id,owner:r.owner,vehicle:r.vehicle,client:r.client,
       type:r.type,notes:r.notes,stage:r.stage,stageTs:r.stage_ts,
       createdTs:r.created_ts,cotId:r.cot_id,depositos:r.depositos||[],
-      gastos:r.gastos||[],depositoPendiente:r.deposito_pendiente
+      gastos:r.gastos||[],depositoPendiente:r.deposito_pendiente,
+      clienteId:r.cliente_id||null,vehiculoId:r.vehiculo_id||null,
+      propietario:r.propietario||'',entidad:r.entidad||''
     };});
     if(tramites.length===0){
       tramites=TRAMITES_RECUPERADOS;
@@ -1304,7 +1382,9 @@ async function cloudSave(){
       type:t.type||'',notes:t.notes||'',stage:t.stage||'cotizacion',
       stage_ts:t.stageTs||Date.now(),created_ts:t.createdTs||Date.now(),
       cot_id:t.cotId||null,depositos:t.depositos||[],
-      gastos:t.gastos||[],deposito_pendiente:t.depositoPendiente||false
+      gastos:t.gastos||[],deposito_pendiente:t.depositoPendiente||false,
+      cliente_id:t.clienteId||null,vehiculo_id:t.vehiculoId||null,
+      propietario:t.propietario||'',entidad:t.entidad||''
     };});
     const cotRows=cotizaciones.map(function(c){return{
       id:c.id,folio:c.folio||null,cliente:c.cliente||'',tramite:c.tramite||'',
@@ -1922,24 +2002,127 @@ function deleteCot(id){
 }
 function convertirATramite(id){
   const c=cotizaciones.find(x=>x.id===id);if(!c)return;
-  const nuevo={
-    id:uid(),
-    owner:c.cliente,
-    vehicle:'',
-    client:'',
-    type:c.tramite,
-    notes:`Cotización: ${mxn(c.total)}`,
-    stage:'aceptacion',
-    stageTs:Date.now(),
-    createdTs:Date.now(),
-    cotId:c.id,
+  window._cotParaTramite=c;
+  // Limpiar modal
+  document.getElementById('cta-serie').value='';
+  document.getElementById('cta-veh-info').style.display='none';
+  document.getElementById('cta-cli-buscar').value='';
+  document.getElementById('cta-cli-info').style.display='none';
+  document.getElementById('cta-entidad').value='';
+  document.getElementById('cta-error').style.display='none';
+  document.getElementById('cta-tramite-tipo').value=c.tramite||'';
+  document.getElementById('modal-cta').classList.add('open');
+}
+
+function buscarVehiculoCTA(){
+  var serie=document.getElementById('cta-serie').value.trim().toUpperCase();
+  var infoEl=document.getElementById('cta-veh-info');
+  if(!serie){infoEl.style.display='none';return;}
+  var veh=vehiculos.find(function(v){return v.numeroSerie===serie;});
+  if(veh){
+    var cli=clientes.find(function(c){return c.id===veh.clienteId;});
+    infoEl.style.display='block';
+    infoEl.style.background='#ecfdf5';
+    infoEl.style.borderColor='#059669';
+    infoEl.innerHTML='<div style="font-size:12px;font-weight:700;color:#059669;margin-bottom:4px;">✅ Vehículo encontrado</div>'
+      +'<div style="font-size:13px;color:#1f2937;">🚗 <strong>'+veh.marca+' '+veh.modelo+' '+veh.anio+'</strong> · '+veh.placa+'</div>'
+      +'<div style="font-size:12px;color:#6b7280;margin-top:2px;">Propietario actual: '+(cli?cli.nombre:'Sin cliente asignado')+'</div>';
+    window._ctaVeh=veh;
+  } else {
+    infoEl.style.display='block';
+    infoEl.style.background='#fef3e2';
+    infoEl.style.borderColor='#d97706';
+    infoEl.innerHTML='<div style="font-size:12px;font-weight:700;color:#d97706;">⚠️ Vehículo no encontrado</div>'
+      +'<div style="font-size:12px;color:#6b7280;margin-top:2px;">Se dará de alta al guardar el trámite.</div>';
+    window._ctaVeh=null;
+  }
+}
+
+function buscarClienteCTA(){
+  var q=document.getElementById('cta-cli-buscar').value.trim().toUpperCase();
+  var infoEl=document.getElementById('cta-cli-info');
+  if(!q){infoEl.style.display='none';return;}
+  var cli=clientes.find(function(c){return c.nombre.toUpperCase().includes(q)||c.telefono.includes(q);});
+  if(cli){
+    infoEl.style.display='block';
+    infoEl.style.background='#ecfdf5';
+    infoEl.style.borderColor='#059669';
+    infoEl.innerHTML='<div style="font-size:12px;font-weight:700;color:#059669;margin-bottom:4px;">✅ Cliente encontrado</div>'
+      +'<div style="font-size:13px;color:#1f2937;">👤 <strong>'+cli.nombre+'</strong></div>'
+      +'<div style="font-size:12px;color:#6b7280;margin-top:2px;">📱 '+cli.telefono+'</div>';
+    window._ctaCli=cli;
+  } else {
+    infoEl.style.display='block';
+    infoEl.style.background='#fef3e2';
+    infoEl.style.borderColor='#d97706';
+    infoEl.innerHTML='<div style="font-size:12px;font-weight:700;color:#d97706;">⚠️ Cliente no encontrado</div>'
+      +'<div style="font-size:12px;color:#6b7280;margin-top:2px;">Se dará de alta con el nombre de la cotización.</div>';
+    window._ctaCli=null;
+  }
+}
+
+async function confirmarCTA(){
+  var serie=document.getElementById('cta-serie').value.trim().toUpperCase();
+  var entidad=document.getElementById('cta-entidad').value;
+  var tramiteTipo=document.getElementById('cta-tramite-tipo').value;
+  var errEl=document.getElementById('cta-error');
+  errEl.style.display='none';
+  var c=window._cotParaTramite;
+  if(!c)return;
+  if(!serie){errEl.textContent='El número de serie es obligatorio.';errEl.style.display='block';return;}
+
+  // Obtener o crear cliente
+  var cli=window._ctaCli;
+  if(!cli){
+    var nombreCli=(c.cliente||'Sin nombre').toUpperCase();
+    cli=clientes.find(function(x){return x.nombre===nombreCli;});
+    if(!cli){
+      cli={id:uid(),nombre:nombreCli,telefono:'',direccion:'',ts:Date.now()};
+      var {error:errCli}=await supa.from('clientes').upsert([{id:cli.id,nombre:cli.nombre,telefono:cli.telefono,direccion:cli.direccion,ts:cli.ts}],{onConflict:'id'});
+      if(!errCli)clientes.unshift(cli);
+    }
+  }
+
+  // Obtener o crear vehiculo
+  var veh=window._ctaVeh;
+  if(!veh){
+    veh={id:uid(),clienteId:cli.id,propietario:'',numeroSerie:serie,
+      anio:'',marca:'',modelo:'',version:'',tipo:'',placa:'',entidad:entidad,
+      tarjetaCirculacionVencimiento:'',ts:Date.now()};
+    var {error:errVeh}=await supa.from('vehiculos').upsert([{
+      id:veh.id,cliente_id:cli.id,numero_serie:serie,entidad:entidad,ts:veh.ts
+    }],{onConflict:'id'});
+    if(!errVeh)vehiculos.unshift(veh);
+  } else {
+    // Actualizar cliente asignado al vehiculo
+    veh.clienteId=cli.id;
+    await supa.from('vehiculos').update({cliente_id:cli.id}).eq('id',veh.id);
+  }
+
+  // Crear tramite
+  var nuevo={
+    id:uid(),owner:cli.nombre,vehicle:veh.marca+' '+veh.modelo+' '+veh.anio+' '+veh.placa,
+    client:cli.nombre,type:tramiteTipo||c.tramite,
+    notes:'Cotizacion: '+mxn(c.total),
+    stage:'aceptacion',stageTs:Date.now(),createdTs:Date.now(),cotId:c.id,
+    depositos:[],gastos:[],depositoPendiente:false,
+    clienteId:cli.id,vehiculoId:veh.id,propietario:veh.propietario||'',entidad:entidad
   };
   tramites.unshift(nuevo);
   c.estado='convertida';
   saveAll();
-  alert(`✅ Trámite creado para ${c.cliente}.\nAbre el Tablero para verlo y completar los datos del vehículo.`);
+  closeMCTA();
   renderSeguimiento();
+  renderBoard();
   updateBadges();
+  alert('✅ Trámite creado para '+cli.nombre+'.\nAbre el Tablero para continuar.');
+}
+
+function closeMCTA(){
+  document.getElementById('modal-cta').classList.remove('open');
+  window._cotParaTramite=null;
+  window._ctaVeh=null;
+  window._ctaCli=null;
 }
 function openCotDetail(id){
   const c=cotizaciones.find(x=>x.id===id);if(!c)return;
@@ -3474,6 +3657,7 @@ function openVehDetail(id){
 
 document.getElementById('modal-vehiculo').addEventListener('click',function(e){if(e.target.id==='modal-vehiculo')closeMVeh();});
 
+document.getElementById('modal-cta').addEventListener('click',function(e){if(e.target.id==='modal-cta')closeMCTA();});
 // ── INIT ──
 cargarPrecios();
 cargarTiposVehiculo();
