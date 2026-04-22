@@ -3621,7 +3621,7 @@ function openNuevoVehiculo(){
   editingVehId=null;
   // No resetear _ctaVuelve aqui, se maneja desde abrirAltaVehiculoCTA
   document.getElementById('mveh-title').textContent='Nuevo vehículo';
-  ['veh-propietario','veh-serie','veh-placa','veh-anio','veh-marca','veh-modelo',
+  ['veh-propietario','veh-serie','veh-placa','veh-anio','veh-modelo',
    'veh-version','veh-fecha-factura','veh-importe-factura','veh-motor','veh-clave',
    'veh-tc-venc','veh-poliza-venc','veh-verif-venc'].forEach(function(id){
     var el=document.getElementById(id);if(el)el.value='';
@@ -3653,7 +3653,7 @@ async function saveVehiculo(){
   var marcaTexto=marcaSel?marcaSel.options[marcaSel.selectedIndex]?.text||'':'';
   var tipo=document.getElementById('veh-tipo').value;
   var anio=document.getElementById('veh-anio').value;
-  var marca=document.getElementById('veh-marca').value.trim().toUpperCase();
+  var marca=marcaTexto;
   var modelo=document.getElementById('veh-modelo').value.trim().toUpperCase();
   var version=document.getElementById('veh-version').value.trim();
   var tcVenc=document.getElementById('veh-tc-venc').value;
@@ -3737,7 +3737,7 @@ function openVehDetail(id){
   document.getElementById('veh-entidad').value=v.entidad||'';
   document.getElementById('veh-tipo').value=v.tipo||'';
   document.getElementById('veh-anio').value=v.anio||'';
-  document.getElementById('veh-marca').value=v.marca||'';
+  // marca se pone via selector veh-marca-sel
   document.getElementById('veh-modelo').value=v.modelo||'';
   document.getElementById('veh-version').value=v.version||'';
   document.getElementById('veh-fecha-factura').value=v.fechaFactura||'';
