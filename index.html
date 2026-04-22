@@ -1279,6 +1279,7 @@ var EN_CLAUDE=(typeof window!=='undefined'&&window.storage&&typeof window.storag
 var catEntidades=[]; // {id_estado, estado}
 var catAseguradoras=[]; // {id_aseguradora, aseguradora}
 var catMarcas=[]; // {id_marca, marca}
+var catTiposPlaca=[]; // {id_tipo, tipo, derechos}
 
 // ── SUPABASE CONFIG ──
 const SUPA_URL='https://bcuqhmlvffaxrayhagoc.supabase.co';
@@ -1479,12 +1480,13 @@ function mapTramite(nombre){
 }
 async function cargarCatalogos(){
   try{
-    const [ent,aseg,marc]=await Promise.all([
-      sbGet('entidades'),sbGet('aseguradoras'),sbGet('marcas')
+    const [ent,aseg,marc,tip]=await Promise.all([
+      sbGet('entidades'),sbGet('aseguradoras'),sbGet('marcas'),sbGet('tipos_placa')
     ]);
     catEntidades=ent.sort(function(a,b){return a.estado.localeCompare(b.estado);});
     catAseguradoras=aseg.sort(function(a,b){return a.aseguradora.localeCompare(b.aseguradora);});
     catMarcas=marc.sort(function(a,b){return a.marca.localeCompare(b.marca);});
+    catTiposPlaca=tip.sort(function(a,b){return a.tipo.localeCompare(b.tipo);});
     poblarSelectsCatalogos();
     console.log('Catalogos cargados: '+catEntidades.length+' entidades, '+catAseguradoras.length+' aseguradoras, '+catMarcas.length+' marcas');
   }catch(e){
@@ -1506,6 +1508,14 @@ function poblarSelectsCatalogos(){
     +catAseguradoras.map(function(a){return '<option value="'+a.id_aseguradora+'">'+a.aseguradora+'</option>';}).join('');
   var elAseg=document.getElementById('veh-aseguradora');
   if(elAseg){var cur=elAseg.value;elAseg.innerHTML=asegOpts;if(cur)elAseg.value=cur;}
+
+  // Tipos de placa
+  var tipoOpts='<option value="">Selecciona tipo...</option>'
+    +catTiposPlaca.map(function(t){return '<option value="'+t.id_tipo+'">'+t.tipo+'</option>';}).join('');
+  ['veh-tipo','alta-veh-tipo','pla-veh-tipo','baja-veh-tipo'].forEach(function(id){
+    var el=document.getElementById(id);
+    if(el){var cur=el.value;el.innerHTML=tipoOpts;if(cur)el.value=cur;}
+  });
 
   // Marcas
   var marcOpts='<option value="">Selecciona marca...</option>'
@@ -3622,14 +3632,7 @@ function renderVehiculos(){
         return '<option value="'+c.id+'">'+c.nombre+'</option>';
       }).join('');
   }
-  // Poblar selector de tipos
-  var selTipo=document.getElementById('veh-tipo');
-  if(selTipo&&TIPOS_VEHICULO.length){
-    var curTipo=selTipo.value;
-    selTipo.innerHTML='<option value="">Selecciona tipo...</option>'
-      +TIPOS_VEHICULO.map(function(t){return '<option value="'+t.tipo+'"'+(t.tipo===curTipo?' selected':'')+'>'+t.tipo+'</option>';}).join('');
-  }
-  // Poblar catalogos
+  // Poblar catalogos (incluye tipos de placa)
   poblarSelectsCatalogos();
   var filtered=vehiculos.filter(function(v){
     if(!vehFilter)return true;
@@ -3745,6 +3748,8 @@ async function saveVehiculo(){
   var idEstado=parseInt(entidad)||null;
   var idAseguradora=parseInt(document.getElementById('veh-aseguradora').value)||null;
   var idMarca=parseInt(document.getElementById('veh-marca-sel').value)||null;
+  var idTipo=parseInt(document.getElementById('veh-tipo').value)||null;
+  var tipoTexto=idTipo?catTiposPlaca.find(function(t){return t.id_tipo===idTipo;})?.tipo||'':'';
   var {error}=await supa.from('vehiculos').upsert([{
     id:veh.id,id_cliente:parseInt(veh.clienteId)||null,propietario:veh.propietario,
     numero_serie:veh.numeroSerie,fecha_factura:veh.fechaFactura||null,
@@ -3755,7 +3760,7 @@ async function saveVehiculo(){
     tarjeta_circulacion_vencimiento:veh.tarjetaCirculacionVencimiento||null,
     id_aseguradora:idAseguradora,poliza_vigencia:veh.polizaVigencia||null,
     verificacion_vigencia:veh.verificacionVigencia||null,
-    estatus:'ACTIVO',ts:veh.ts,id_marca:idMarca
+    estatus:'ACTIVO',ts:veh.ts,id_marca:idMarca,id_tipo:idTipo,tipo:tipoTexto
   }],{onConflict:'id'});
 
   if(error){errEl.textContent='Error al guardar: '+error.message;errEl.style.display='block';return;}
