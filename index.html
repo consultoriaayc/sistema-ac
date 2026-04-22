@@ -2106,7 +2106,6 @@ function abrirAltaVehiculoCTA(){
 
 async function confirmarCTA(){
   var serie=document.getElementById('cta-serie').value.trim().toUpperCase();
-  var entidad=document.getElementById('cta-entidad').value;
   var tramiteTipo=document.getElementById('cta-tramite-tipo').value;
   var errEl=document.getElementById('cta-error');
   errEl.style.display='none';
@@ -2114,36 +2113,25 @@ async function confirmarCTA(){
   if(!c)return;
   if(!serie){errEl.textContent='El número de serie es obligatorio.';errEl.style.display='block';return;}
 
-  // Cliente viene del vehiculo seleccionado
-  var cli=null;
-  if(window._ctaVeh&&window._ctaVeh.clienteId){
-    cli=clientes.find(function(c){return c.id==window._ctaVeh.clienteId;});
-  }
-  if(!cli){
-    errEl.textContent='El vehículo no tiene cliente asignado. Edita el vehículo y asigna un cliente primero.';
+  // Buscar vehiculo — puede ser el encontrado por busqueda o el recien dado de alta
+  var veh=window._ctaVeh||vehiculos.find(function(v){return v.numeroSerie===serie;});
+  if(!veh){
+    errEl.textContent='El vehículo no existe. Usa el botón "+ Dar de alta este vehículo".';
     errEl.style.display='block';return;
   }
 
-  var propietario='';
-  // Obtener o crear vehiculo
-  var veh=window._ctaVeh;
-  if(!veh){
-    // Si no existe, buscar si ya se dio de alta desde el modal de vehiculos
-    veh=vehiculos.find(function(v){return v.numeroSerie===serie;});
-    if(!veh){
-      errEl.textContent='El vehículo no existe. Por favor da de alta el vehículo primero usando el botón "+ Dar de alta este vehículo".';
-      errEl.style.display='block';
-      return;
-    }
+  // Cliente viene del vehiculo (campo veh-cliente-sel del formulario de vehiculo)
+  var cli=null;
+  if(veh.clienteId){
+    cli=clientes.find(function(x){return x.id==veh.clienteId;});
   }
-  // Actualizar propietario en el vehiculo
-  veh.propietario=propietario;
-  await supa.from('vehiculos').update({propietario:propietario}).eq('id',veh.id);
-  if(true){
-    // Actualizar cliente asignado al vehiculo
-    veh.clienteId=cli.id;
-    await supa.from('vehiculos').update({cliente_id:cli.id}).eq('id',veh.id);
+  if(!cli){
+    errEl.textContent='El vehículo no tiene cliente asignado. Edita el vehículo y asigna un cliente.';
+    errEl.style.display='block';return;
   }
+
+  // Tomar entidad y tipo del vehiculo
+  var entidad=veh.entidad||'';
 
   // Modo asignacion (tramite ya existe) vs modo nuevo tramite
   if(window._tramiteAsignarId){
@@ -2155,7 +2143,6 @@ async function confirmarCTA(){
       tExist.vehicle=veh.marca+' '+veh.modelo+' '+veh.anio+(veh.placa?' '+veh.placa:'');
       tExist.propietario=veh.propietario||'';
       tExist.entidad=entidad;
-      // Actualizar en Supabase
       await supa.from('tramites').update({
         cliente_id:parseInt(cli.id)||null,
         vehiculo_id:veh.id,
@@ -2165,7 +2152,6 @@ async function confirmarCTA(){
         entidad:entidad
       }).eq('id',window._tramiteAsignarId);
     }
-    window._tramiteAsignarId=null;
     saveAll();
     closeMCTA();
     renderBoard();
@@ -2173,12 +2159,14 @@ async function confirmarCTA(){
   } else {
     // Crear tramite nuevo
     var nuevo={
-      id:uid(),owner:cli.nombre,vehicle:veh.marca+' '+veh.modelo+' '+veh.anio+(veh.placa?' '+veh.placa:''),
+      id:uid(),owner:cli.nombre,
+      vehicle:veh.marca+' '+veh.modelo+' '+veh.anio+(veh.placa?' '+veh.placa:''),
       client:cli.nombre,type:tramiteTipo||c.tramite,
       notes:'Cotizacion: '+mxn(c.total),
       stage:'aceptacion',stageTs:Date.now(),createdTs:Date.now(),cotId:c.id,
       depositos:[],gastos:[],depositoPendiente:false,
-      clienteId:cli.id,vehiculoId:veh.id,propietario:veh.propietario||'',entidad:entidad
+      clienteId:cli.id,vehiculoId:veh.id,
+      propietario:veh.propietario||'',entidad:entidad
     };
     tramites.unshift(nuevo);
     c.estado='convertida';
@@ -2187,23 +2175,8 @@ async function confirmarCTA(){
     renderSeguimiento();
     renderBoard();
     updateBadges();
-    alert('✅ Trámite creado para '+cli.nombre+'.\nAbre el Tablero para continuar.');
+    alert('✅ Trámite creado para '+cli.nombre+'.');
   }
-}
-
-function asignarCVTramite(tramiteId, e){
-  e.stopPropagation();
-  var t=tramites.find(function(x){return x.id===tramiteId;});
-  if(!t)return;
-  // Reusar el modal CTA pero en modo asignacion
-  window._cotParaTramite={cliente:t.owner,tramite:t.type,total:0};
-  window._tramiteAsignarId=tramiteId;
-  document.getElementById('cta-serie').value='';
-  document.getElementById('cta-veh-info').style.display='none';
-  document.getElementById('cta-entidad').value='';
-  document.getElementById('cta-error').style.display='none';
-  document.getElementById('cta-tramite-tipo').value=t.type||'';
-  document.getElementById('modal-cta').classList.add('open');
 }
 
 function closeMCTA(){
@@ -2284,7 +2257,7 @@ function renderBoard(){
           ${next?`<button class="k-btn fwd" onclick="moveT('${t.id}','${next}',event)">${fwdLabel}</button>`:''}
           <button class="k-del" onclick="delT('${t.id}',event)">✕</button>
         </div>
-        ${!t.clienteId&&!t.vehiculoId?`<button onclick="asignarCVTramite('${t.id}',event)" style="width:100%;margin-top:6px;padding:6px;background:#d97706;color:white;border:none;border-radius:6px;font-size:11px;font-weight:700;font-family:Inter,sans-serif;cursor:pointer;">🔗 Asignar cliente y vehículo</button>`:''}
+        ${(!t.clienteId||!t.vehiculoId)?`<button onclick="asignarCVTramite('${t.id}',event)" style="width:100%;margin-top:6px;padding:6px;background:#d97706;color:white;border:none;border-radius:6px;font-size:11px;font-weight:700;font-family:Inter,sans-serif;cursor:pointer;">🔗 Asignar cliente y vehículo</button>`:''}
         `;
       card.addEventListener('click',()=>openKDetail(t.id));
       body.appendChild(card);
