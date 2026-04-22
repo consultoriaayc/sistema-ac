@@ -1341,8 +1341,8 @@ async function cloudLoad(){
     // Cargar clientes
     const cl=await sbGet('clientes');
     clientes=cl.map(function(r){return{
-      id:r.id_cliente,nombre:r.nombre,telefono:r.celular||r.telefono||'',
-      direccion:r.direccion||'',ts:r.ts
+      id:r.id_cliente||r.id,nombre:r.nombre,telefono:r.celular||r.telefono||'',
+      direccion:r.direccion||'',ts:r.ts||Date.now()
     };});
     // Cargar vehiculos
     const vh=await sbGet('vehiculos');
@@ -3397,8 +3397,8 @@ async function saveCliente(){
   if(dupTel){errEl.textContent='Ya existe un cliente con ese teléfono.';errEl.style.display='block';return;}
   var cli={id:editingClienteId||uid(),nombre:nombre,telefono:telefono,direccion:direccion,ts:Date.now()};
   var {error}=await supa.from('clientes').upsert([{
-    id:cli.id,nombre:cli.nombre,telefono:cli.telefono,direccion:cli.direccion,ts:cli.ts
-  }],{onConflict:'id'});
+    id_cliente:cli.id,nombre:cli.nombre,celular:cli.telefono,direccion:cli.direccion,ts:cli.ts
+  }],{onConflict:'id_cliente'});
   if(error){errEl.textContent='Error al guardar: '+error.message;errEl.style.display='block';return;}
   if(editingClienteId){
     var idx=clientes.findIndex(function(c){return c.id===editingClienteId;});
@@ -3762,7 +3762,7 @@ function iniciarRealtime(){
       if(payload.eventType==='DELETE'){
         clientes=clientes.filter(function(c){return c.id!==payload.old.id;});
       } else {
-        var cli={id:r.id,nombre:r.nombre,telefono:r.telefono,direccion:r.direccion||'',ts:r.ts};
+        var cli={id:r.id_cliente||r.id,nombre:r.nombre,telefono:r.celular||r.telefono||'',direccion:r.direccion||'',ts:r.ts||Date.now()};
         var idx=clientes.findIndex(function(c){return c.id===r.id;});
         if(idx>=0)clientes[idx]=cli;
         else clientes.unshift(cli);
