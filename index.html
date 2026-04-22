@@ -2138,23 +2138,67 @@ async function confirmarCTA(){
     await supa.from('vehiculos').update({cliente_id:cli.id}).eq('id',veh.id);
   }
 
-  // Crear tramite
-  var nuevo={
-    id:uid(),owner:cli.nombre,vehicle:veh.marca+' '+veh.modelo+' '+veh.anio+' '+veh.placa,
-    client:cli.nombre,type:tramiteTipo||c.tramite,
-    notes:'Cotizacion: '+mxn(c.total),
-    stage:'aceptacion',stageTs:Date.now(),createdTs:Date.now(),cotId:c.id,
-    depositos:[],gastos:[],depositoPendiente:false,
-    clienteId:cli.id,vehiculoId:veh.id,propietario:veh.propietario||'',entidad:entidad
-  };
-  tramites.unshift(nuevo);
-  c.estado='convertida';
-  saveAll();
-  closeMCTA();
-  renderSeguimiento();
-  renderBoard();
-  updateBadges();
-  alert('✅ Trámite creado para '+cli.nombre+'.\nAbre el Tablero para continuar.');
+  // Modo asignacion (tramite ya existe) vs modo nuevo tramite
+  if(window._tramiteAsignarId){
+    var tExist=tramites.find(function(x){return x.id===window._tramiteAsignarId;});
+    if(tExist){
+      tExist.clienteId=cli.id;
+      tExist.vehiculoId=veh.id;
+      tExist.owner=cli.nombre;
+      tExist.vehicle=veh.marca+' '+veh.modelo+' '+veh.anio+(veh.placa?' '+veh.placa:'');
+      tExist.propietario=veh.propietario||'';
+      tExist.entidad=entidad;
+      // Actualizar en Supabase
+      await supa.from('tramites').update({
+        cliente_id:parseInt(cli.id)||null,
+        vehiculo_id:veh.id,
+        owner:tExist.owner,
+        vehicle:tExist.vehicle,
+        propietario:tExist.propietario,
+        entidad:entidad
+      }).eq('id',window._tramiteAsignarId);
+    }
+    window._tramiteAsignarId=null;
+    saveAll();
+    closeMCTA();
+    renderBoard();
+    alert('✅ Cliente y vehículo asignados correctamente.');
+  } else {
+    // Crear tramite nuevo
+    var nuevo={
+      id:uid(),owner:cli.nombre,vehicle:veh.marca+' '+veh.modelo+' '+veh.anio+(veh.placa?' '+veh.placa:''),
+      client:cli.nombre,type:tramiteTipo||c.tramite,
+      notes:'Cotizacion: '+mxn(c.total),
+      stage:'aceptacion',stageTs:Date.now(),createdTs:Date.now(),cotId:c.id,
+      depositos:[],gastos:[],depositoPendiente:false,
+      clienteId:cli.id,vehiculoId:veh.id,propietario:veh.propietario||'',entidad:entidad
+    };
+    tramites.unshift(nuevo);
+    c.estado='convertida';
+    saveAll();
+    closeMCTA();
+    renderSeguimiento();
+    renderBoard();
+    updateBadges();
+    alert('✅ Trámite creado para '+cli.nombre+'.\nAbre el Tablero para continuar.');
+  }
+}
+
+function asignarCVTramite(tramiteId, e){
+  e.stopPropagation();
+  var t=tramites.find(function(x){return x.id===tramiteId;});
+  if(!t)return;
+  // Reusar el modal CTA pero en modo asignacion
+  window._cotParaTramite={cliente:t.owner,tramite:t.type,total:0};
+  window._tramiteAsignarId=tramiteId;
+  document.getElementById('cta-serie').value='';
+  document.getElementById('cta-veh-info').style.display='none';
+  document.getElementById('cta-cli-buscar').value=t.owner||'';
+  document.getElementById('cta-cli-info').style.display='none';
+  document.getElementById('cta-entidad').value='';
+  document.getElementById('cta-error').style.display='none';
+  document.getElementById('cta-tramite-tipo').value=t.type||'';
+  document.getElementById('modal-cta').classList.add('open');
 }
 
 function closeMCTA(){
@@ -2233,7 +2277,9 @@ function renderBoard(){
           ${prev?`<button class="k-btn" onclick="moveT('${t.id}','${prev}',event)">←</button>`:''}
           ${next?`<button class="k-btn fwd" onclick="moveT('${t.id}','${next}',event)">${fwdLabel}</button>`:''}
           <button class="k-del" onclick="delT('${t.id}',event)">✕</button>
-        </div>`;
+        </div>
+        ${!t.clienteId&&!t.vehiculoId?`<button onclick="asignarCVTramite('${t.id}',event)" style="width:100%;margin-top:6px;padding:6px;background:#d97706;color:white;border:none;border-radius:6px;font-size:11px;font-weight:700;font-family:Inter,sans-serif;cursor:pointer;">🔗 Asignar cliente y vehículo</button>`:''}
+        `;
       card.addEventListener('click',()=>openKDetail(t.id));
       body.appendChild(card);
     });
