@@ -2085,19 +2085,7 @@ function buscarVehiculoCTA(){
   }
 }
 
-function abrirAltaClienteCTA(){
-  var nombre=document.getElementById('cta-cli-buscar').value.trim().toUpperCase();
-  // Guardar estado del CTA
-  window._ctaNombreTemp=nombre;
-  window._ctaVuelveCliente=true;
-  closeMCTA();
-  // Abrir modal de cliente con nombre prellenado
-  openNuevoCliente();
-  setTimeout(function(){
-    var nomEl=document.getElementById('cli-nombre');
-    if(nomEl)nomEl.value=nombre;
-  },100);
-}
+
 
 function abrirAltaVehiculoCTA(){
   // Pasar la serie al formulario de alta de vehiculo y abrirlo
@@ -2114,30 +2102,6 @@ function abrirAltaVehiculoCTA(){
   },100);
 }
 
-function buscarClienteCTA(){
-  var q=document.getElementById('cta-cli-buscar').value.trim().toUpperCase();
-  var infoEl=document.getElementById('cta-cli-info');
-  if(!q){infoEl.style.display='none';return;}
-  var cli=clientes.find(function(c){return c.nombre.toUpperCase().includes(q)||c.telefono.includes(q);});
-  if(cli){
-    document.getElementById('cta-cli-nuevo-btn').style.display='none';
-    infoEl.style.display='block';
-    infoEl.style.background='#ecfdf5';
-    infoEl.style.border='1.5px solid #059669';
-    infoEl.innerHTML='<div style="font-size:12px;font-weight:700;color:#059669;margin-bottom:4px;">✅ Cliente encontrado</div>'
-      +'<div style="font-size:13px;color:#1f2937;">👤 <strong>'+cli.nombre+'</strong></div>'
-      +'<div style="font-size:12px;color:#6b7280;margin-top:2px;">📱 '+cli.telefono+'</div>';
-    window._ctaCli=cli;
-  } else {
-    document.getElementById('cta-cli-nuevo-btn').style.display='block';
-    infoEl.style.display='block';
-    infoEl.style.background='#fef3e2';
-    infoEl.style.border='1.5px solid #d97706';
-    infoEl.innerHTML='<div style="font-size:12px;font-weight:700;color:#d97706;">⚠️ Cliente no encontrado</div>'
-      +'<div style="font-size:12px;color:#6b7280;margin-top:2px;">Puedes darlo de alta con el botón de abajo.</div>';
-    window._ctaCli=null;
-  }
-}
 
 async function confirmarCTA(){
   var serie=document.getElementById('cta-serie').value.trim().toUpperCase();
@@ -2149,16 +2113,14 @@ async function confirmarCTA(){
   if(!c)return;
   if(!serie){errEl.textContent='El número de serie es obligatorio.';errEl.style.display='block';return;}
 
-  // Obtener o crear cliente
-  var cli=window._ctaCli;
+  // Cliente viene del vehiculo seleccionado
+  var cli=null;
+  if(window._ctaVeh&&window._ctaVeh.clienteId){
+    cli=clientes.find(function(c){return c.id==window._ctaVeh.clienteId;});
+  }
   if(!cli){
-    var nombreCli=(c.cliente||'Sin nombre').toUpperCase();
-    cli=clientes.find(function(x){return x.nombre===nombreCli;});
-    if(!cli){
-      cli={id:uid(),nombre:nombreCli,telefono:'',direccion:'',ts:Date.now()};
-      var {error:errCli}=await supa.from('clientes').upsert([{id:cli.id,nombre:cli.nombre,telefono:cli.telefono,direccion:cli.direccion,ts:cli.ts}],{onConflict:'id'});
-      if(!errCli)clientes.unshift(cli);
-    }
+    errEl.textContent='El vehículo no tiene cliente asignado. Edita el vehículo y asigna un cliente primero.';
+    errEl.style.display='block';return;
   }
 
   var propietario='';
@@ -2237,8 +2199,6 @@ function asignarCVTramite(tramiteId, e){
   window._tramiteAsignarId=tramiteId;
   document.getElementById('cta-serie').value='';
   document.getElementById('cta-veh-info').style.display='none';
-  document.getElementById('cta-cli-buscar').value=t.owner||'';
-  document.getElementById('cta-cli-info').style.display='none';
   document.getElementById('cta-entidad').value='';
   document.getElementById('cta-error').style.display='none';
   document.getElementById('cta-tramite-tipo').value=t.type||'';
