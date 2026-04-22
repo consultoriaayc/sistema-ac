@@ -272,7 +272,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
     </div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
       <div class="save-ind" id="save-ind"><div class="save-dot"></div>
-    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22</span><span id="save-txt">guardado</span></div>
+    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.2</span><span id="save-txt">guardado</span></div>
       <button onclick="exportarDatos()" style="padding:5px 12px;background:#059669;color:white;border:none;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Exportar</button>
       <label style="padding:5px 12px;background:#1e3a5f;color:white;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Importar<input type="file" id="import-file" accept=".json" style="display:none" onchange="importarDatos(this)"/></label>
       <div class="estado-badge">Morelos</div>
@@ -2177,6 +2177,22 @@ async function confirmarCTA(){
     updateBadges();
     alert('✅ Trámite creado para '+cli.nombre+'.');
   }
+}
+
+function asignarCVTramite(tramiteId,e){
+  e.stopPropagation();
+  var t=tramites.find(function(x){return x.id===tramiteId;});
+  if(!t)return;
+  window._cotParaTramite={cliente:t.owner,tramite:t.type,total:0};
+  window._tramiteAsignarId=tramiteId;
+  window._ctaVeh=null;
+  document.getElementById('cta-serie').value='';
+  document.getElementById('cta-veh-info').style.display='none';
+  document.getElementById('cta-veh-nuevo-btn').style.display='none';
+  document.getElementById('cta-entidad').value='';
+  document.getElementById('cta-error').style.display='none';
+  document.getElementById('cta-tramite-tipo').value=t.type||'';
+  document.getElementById('modal-cta').classList.add('open');
 }
 
 function closeMCTA(){
