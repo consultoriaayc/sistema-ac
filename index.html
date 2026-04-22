@@ -3713,8 +3713,7 @@ async function saveVehiculo(){
   var errEl=document.getElementById('mveh-error');
   errEl.style.display='none';
 
-  var cli=window._ctaCli;
-  if(!cli){errEl.textContent='Busca y selecciona un cliente antes de continuar.';errEl.style.display='block';return;}
+  if(!clienteId||clienteId===''){errEl.textContent='Selecciona un cliente.';errEl.style.display='block';return;}
   if(!serie){errEl.textContent='El número de serie es obligatorio.';errEl.style.display='block';return;}
   if(!anio||!marca||!modelo){errEl.textContent='Año, marca y modelo son obligatorios.';errEl.style.display='block';return;}
   var version=document.getElementById('veh-version').value.trim();
