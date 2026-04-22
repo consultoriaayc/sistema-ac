@@ -375,7 +375,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
     </div>
     <div class="card">
       <div class="card-title">Datos del vehículo</div>
-      <div class="field"><label>Tipo de vehículo *</label><select id="alta-veh-tipo" onchange="calcAlta()" style="width:100%;padding:11px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;font-family:Inter,sans-serif;color:var(--text);background:white;"><option value="">Selecciona tipo...</option></select></div>
+      <div class="field"><label>Tipo de placa *</label><select id="alta-veh-tipo" onchange="calcAlta()" style="width:100%;padding:11px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;font-family:Inter,sans-serif;color:var(--text);background:white;"><option value="">Selecciona tipo...</option></select></div>
       <div class="g2">
         <div class="field"><label>Año</label><input type="number" id="alta-veh-anio" placeholder="Ej. 2022" min="1980" max="2030"/></div>
         <div class="field"><label>Marca</label><input type="text" id="alta-veh-marca" placeholder="Ej. Nissan"/></div>
@@ -535,7 +535,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
     </div>
     <div class="card">
       <div class="card-title">Datos del vehículo</div>
-      <div class="field"><label>Tipo de vehículo *</label><select id="pla-veh-tipo" onchange="calcPlacas()" style="width:100%;padding:11px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;font-family:Inter,sans-serif;color:var(--text);background:white;"><option value="">Selecciona tipo...</option></select></div>
+      <div class="field"><label>Tipo de placa *</label><select id="pla-veh-tipo" onchange="calcPlacas()" style="width:100%;padding:11px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;font-family:Inter,sans-serif;color:var(--text);background:white;"><option value="">Selecciona tipo...</option></select></div>
       <div class="g2">
         <div class="field"><label>Año</label><input type="number" id="pla-veh-anio" placeholder="Ej. 2022" min="1980" max="2030"/></div>
         <div class="field"><label>Marca</label><input type="text" id="pla-veh-marca" placeholder="Ej. Nissan"/></div>
@@ -567,7 +567,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
     </div>
     <div class="card">
       <div class="card-title">Datos del vehículo</div>
-      <div class="field"><label>Tipo de vehículo *</label><select id="baja-veh-tipo" onchange="calcBaja()" style="width:100%;padding:11px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;font-family:Inter,sans-serif;color:var(--text);background:white;"><option value="">Selecciona tipo...</option></select></div>
+      <div class="field"><label>Tipo de placa *</label><select id="baja-veh-tipo" onchange="calcBaja()" style="width:100%;padding:11px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;font-family:Inter,sans-serif;color:var(--text);background:white;"><option value="">Selecciona tipo...</option></select></div>
       <div class="g2">
         <div class="field"><label>Año</label><input type="number" id="baja-veh-anio" placeholder="Ej. 2022" min="1980" max="2030"/></div>
         <div class="field"><label>Marca</label><input type="text" id="baja-veh-marca" placeholder="Ej. Nissan"/></div>
@@ -650,7 +650,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 
     <!-- Tipo de vehiculo -->
     <div class="card">
-      <div class="card-title">Tipo de vehículo</div>
+      <div class="card-title">Tipo de placa</div>
       <div class="alta-tipos" style="grid-template-columns:1fr 1fr 1fr;">
         <div class="tipo-radio"><input type="radio" name="seg-tipo" value="auto" id="seg-auto" checked><label for="seg-auto">🚗 Automóvil residente</label></div>
         <div class="tipo-radio"><input type="radio" name="seg-tipo" value="pesado" id="seg-pesado"><label for="seg-pesado">🚛 Equipo pesado</label></div>
@@ -3713,7 +3713,8 @@ async function saveVehiculo(){
   var errEl=document.getElementById('mveh-error');
   errEl.style.display='none';
 
-  if(!window._ctaCli){errEl.textContent='Busca y selecciona un cliente antes de continuar.';errEl.style.display='block';return;}
+  var cli=window._ctaCli;
+  if(!cli){errEl.textContent='Busca y selecciona un cliente antes de continuar.';errEl.style.display='block';return;}
   if(!serie){errEl.textContent='El número de serie es obligatorio.';errEl.style.display='block';return;}
   if(!anio||!marca||!modelo){errEl.textContent='Año, marca y modelo son obligatorios.';errEl.style.display='block';return;}
   var version=document.getElementById('veh-version').value.trim();
