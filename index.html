@@ -2145,11 +2145,12 @@ function buscarClienteCTA(){
       +'<div style="font-size:12px;color:#6b7280;margin-top:2px;">📱 '+cli.telefono+'</div>';
     window._ctaCli=cli;
   } else {
+    document.getElementById('cta-cli-nuevo-btn').style.display='block';
     infoEl.style.display='block';
     infoEl.style.background='#fef3e2';
-    infoEl.style.borderColor='#d97706';
+    infoEl.style.border='1.5px solid #d97706';
     infoEl.innerHTML='<div style="font-size:12px;font-weight:700;color:#d97706;">⚠️ Cliente no encontrado</div>'
-      +'<div style="font-size:12px;color:#6b7280;margin-top:2px;">Se dará de alta con el nombre de la cotización.</div>';
+      +'<div style="font-size:12px;color:#6b7280;margin-top:2px;">Puedes darlo de alta con el botón de abajo.</div>';
     window._ctaCli=null;
   }
 }
