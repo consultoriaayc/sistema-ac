@@ -1178,17 +1178,6 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
       <label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:6px;">Entidad</label>
       <select id="cta-entidad" style="width:100%;padding:11px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:Inter,sans-serif;color:var(--text);background:white;">
         <option value="">Selecciona estado...</option>
-        <option>Aguascalientes</option><option>Baja California</option><option>Baja California Sur</option>
-        <option>Campeche</option><option>Chiapas</option><option>Chihuahua</option>
-        <option>Ciudad de México</option><option>Coahuila</option><option>Colima</option>
-        <option>Durango</option><option>Estado de México</option><option>Guanajuato</option>
-        <option>Guerrero</option><option>Hidalgo</option><option>Jalisco</option>
-        <option>Michoacán</option><option>Morelos</option><option>Nayarit</option>
-        <option>Nuevo León</option><option>Oaxaca</option><option>Puebla</option>
-        <option>Querétaro</option><option>Quintana Roo</option><option>San Luis Potosí</option>
-        <option>Sinaloa</option><option>Sonora</option><option>Tabasco</option>
-        <option>Tamaulipas</option><option>Tlaxcala</option><option>Veracruz</option>
-        <option>Yucatán</option><option>Zacatecas</option>
       </select>
     </div>
 
@@ -1278,6 +1267,9 @@ const TRAMITES_RECUPERADOS=[
 
 // Funciona en Claude.ai Y en navegador normal (Netlify, celular, etc.)
 var EN_CLAUDE=(typeof window!=='undefined'&&window.storage&&typeof window.storage.get==='function');
+var catEntidades=[]; // {id_estado, estado}
+var catAseguradoras=[]; // {id_aseguradora, aseguradora}
+var catMarcas=[]; // {id_marca, marca}
 
 // ── SUPABASE CONFIG ──
 const SUPA_URL='https://bcuqhmlvffaxrayhagoc.supabase.co';
@@ -1349,22 +1341,32 @@ async function cloudLoad(){
     // Cargar clientes
     const cl=await sbGet('clientes');
     clientes=cl.map(function(r){return{
-      id:r.id,nombre:r.nombre,telefono:r.telefono,
+      id:r.id_cliente,nombre:r.nombre,telefono:r.celular||r.telefono||'',
       direccion:r.direccion||'',ts:r.ts
     };});
     // Cargar vehiculos
     const vh=await sbGet('vehiculos');
-    vehiculos=vh.map(function(r){return{
-      id:r.id,clienteId:r.cliente_id,propietario:r.propietario||'',
-      numeroSerie:r.numero_serie||'',fechaFactura:r.fecha_factura||'',
-      importeFactura:r.importe_factura||0,anio:r.anio||'',marca:r.marca||'',
-      modelo:r.modelo||'',version:r.version||'',tipo:r.tipo||'',
-      placa:r.placa||'',entidad:r.entidad||'',numeroMotor:r.numero_motor||'',
-      claveVehicular:r.clave_vehicular||'',
-      tarjetaCirculacionVencimiento:r.tarjeta_circulacion_vencimiento||'',
-      aseguradora:r.aseguradora||'',polizaVigencia:r.poliza_vigencia||'',
-      verificacionVigencia:r.verificacion_vigencia||'',ts:r.ts
-    };});
+    vehiculos=vh.map(function(r){
+      // Resolver nombres desde catalogos
+      var entNombre=catEntidades.find(function(e){return e.id_estado===r.id_estado;});
+      var asegNombre=catAseguradoras.find(function(a){return a.id_aseguradora===r.id_aseguradora;});
+      return{
+        id:r.id,clienteId:r.id_cliente,propietario:r.propietario||'',
+        numeroSerie:r.numero_serie||'',fechaFactura:r.fecha_factura||'',
+        importeFactura:r.importe_factura||0,anio:r.anio||'',marca:r.marca||'',
+        modelo:r.modelo||'',version:r.version||'',tipo:r.tipo||'',
+        placa:r.placa||'',
+        entidad:entNombre?entNombre.estado:(r.entidad||''),
+        idEstado:r.id_estado,
+        numeroMotor:r.numero_motor||'',claveVehicular:r.clave_vehicular||'',
+        tarjetaCirculacionVencimiento:r.tarjeta_circulacion_vencimiento||'',
+        aseguradora:asegNombre?asegNombre.aseguradora:(r.aseguradora||''),
+        idAseguradora:r.id_aseguradora,
+        polizaVigencia:r.poliza_vigencia||'',
+        verificacionVigencia:r.verificacion_vigencia||'',
+        estatus:r.estatus||'ACTIVO',ts:r.ts
+      };
+    });
     setSaveInd('saved');
   }catch(e){
     console.error('Error cargando datos:',e);
@@ -1466,6 +1468,43 @@ function mapTramite(nombre){
   if(/REVISTA/.test(n))return'revista';
   return null;
 }
+async function cargarCatalogos(){
+  try{
+    const [ent,aseg,marc]=await Promise.all([
+      sbGet('entidades'),sbGet('aseguradoras'),sbGet('marcas')
+    ]);
+    catEntidades=ent.sort(function(a,b){return a.estado.localeCompare(b.estado);});
+    catAseguradoras=aseg.sort(function(a,b){return a.aseguradora.localeCompare(b.aseguradora);});
+    catMarcas=marc.sort(function(a,b){return a.marca.localeCompare(b.marca);});
+    poblarSelectsCatalogos();
+    console.log('Catalogos cargados: '+catEntidades.length+' entidades, '+catAseguradoras.length+' aseguradoras, '+catMarcas.length+' marcas');
+  }catch(e){
+    console.error('Error cargando catalogos:',e);
+  }
+}
+
+function poblarSelectsCatalogos(){
+  // Entidades
+  var entOpts='<option value="">Selecciona estado...</option>'
+    +catEntidades.map(function(e){return '<option value="'+e.id_estado+'">'+e.estado+'</option>';}).join('');
+  ['veh-entidad','cta-entidad'].forEach(function(id){
+    var el=document.getElementById(id);
+    if(el){var cur=el.value;el.innerHTML=entOpts;if(cur)el.value=cur;}
+  });
+
+  // Aseguradoras
+  var asegOpts='<option value="">Sin aseguradora</option>'
+    +catAseguradoras.map(function(a){return '<option value="'+a.id_aseguradora+'">'+a.aseguradora+'</option>';}).join('');
+  var elAseg=document.getElementById('veh-aseguradora');
+  if(elAseg){var cur=elAseg.value;elAseg.innerHTML=asegOpts;if(cur)elAseg.value=cur;}
+
+  // Marcas
+  var marcOpts='<option value="">Selecciona marca...</option>'
+    +catMarcas.map(function(m){return '<option value="'+m.id_marca+'">'+m.marca+'</option>';}).join('');
+  var elMarc=document.getElementById('veh-marca-sel');
+  if(elMarc){var cur=elMarc.value;elMarc.innerHTML=marcOpts;if(cur)elMarc.value=cur;}
+}
+
 async function cargarTiposVehiculo(){
   try{
     const res=await fetch(TIPOS_URL+'&t='+Date.now());
@@ -3492,6 +3531,8 @@ function renderVehiculos(){
     selTipo.innerHTML='<option value="">Selecciona tipo...</option>'
       +TIPOS_VEHICULO.map(function(t){return '<option value="'+t.tipo+'"'+(t.tipo===curTipo?' selected':'')+'>'+t.tipo+'</option>';}).join('');
   }
+  // Poblar catalogos
+  poblarSelectsCatalogos();
   var filtered=vehiculos.filter(function(v){
     if(!vehFilter)return true;
     var q=vehFilter.toLowerCase();
@@ -3560,6 +3601,8 @@ async function saveVehiculo(){
   var serie=document.getElementById('veh-serie').value.trim().toUpperCase();
   var placa=document.getElementById('veh-placa').value.trim().toUpperCase();
   var entidad=document.getElementById('veh-entidad').value;
+  var marcaSel=document.getElementById('veh-marca-sel');
+  var marcaTexto=marcaSel?marcaSel.options[marcaSel.selectedIndex]?.text||'':'';
   var tipo=document.getElementById('veh-tipo').value;
   var anio=document.getElementById('veh-anio').value;
   var marca=document.getElementById('veh-marca').value.trim().toUpperCase();
@@ -3601,16 +3644,20 @@ async function saveVehiculo(){
 
   // Eliminar duplicado si existe con misma serie
   if(!editingVehId)await supa.from('vehiculos').delete().eq('numero_serie',serie).neq('id','none');
+  var idEstado=parseInt(entidad)||null;
+  var idAseguradora=parseInt(document.getElementById('veh-aseguradora').value)||null;
+  var idMarca=parseInt(document.getElementById('veh-marca-sel').value)||null;
   var {error}=await supa.from('vehiculos').upsert([{
-    id:veh.id,cliente_id:veh.clienteId,propietario:veh.propietario,
+    id:veh.id,id_cliente:parseInt(veh.clienteId)||null,propietario:veh.propietario,
     numero_serie:veh.numeroSerie,fecha_factura:veh.fechaFactura||null,
-    importe_factura:veh.importeFactura||null,anio:veh.anio,marca:veh.marca,
-    modelo:veh.modelo,version:veh.version,tipo:veh.tipo,placa:veh.placa,
-    entidad:veh.entidad,numero_motor:veh.numeroMotor||null,
+    importe_factura:veh.importeFactura||null,anio:veh.anio,marca:marcaTexto,
+    modelo:veh.modelo,version:veh.version,tipo:veh.tipo,placa:veh.placa||null,
+    id_estado:idEstado,numero_motor:veh.numeroMotor||null,
     clave_vehicular:veh.claveVehicular||null,
-    tarjeta_circulacion_vencimiento:veh.tarjetaCirculacionVencimiento,
-    aseguradora:veh.aseguradora||null,poliza_vigencia:veh.polizaVigencia||null,
-    verificacion_vigencia:veh.verificacionVigencia||null,ts:veh.ts
+    tarjeta_circulacion_vencimiento:veh.tarjetaCirculacionVencimiento||null,
+    id_aseguradora:idAseguradora,poliza_vigencia:veh.polizaVigencia||null,
+    verificacion_vigencia:veh.verificacionVigencia||null,
+    estatus:'ACTIVO',ts:veh.ts,id_marca:idMarca
   }],{onConflict:'id'});
 
   if(error){errEl.textContent='Error al guardar: '+error.message;errEl.style.display='block';return;}
@@ -3755,6 +3802,7 @@ function iniciarRealtime(){
 // ── INIT ──
 cargarPrecios();
 cargarTiposVehiculo();
+cargarCatalogos();
 cloudLoad().then(function(){iniciarRealtime();});
 </script>
 </body>
