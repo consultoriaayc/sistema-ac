@@ -3676,7 +3676,7 @@ function filtrarVehiculos(){
 
 function openNuevoVehiculo(){
   editingVehId=null;
-  window._ctaVuelve=false;
+  // No resetear _ctaVuelve aqui, se maneja desde abrirAltaVehiculoCTA
   document.getElementById('mveh-title').textContent='Nuevo vehículo';
   ['veh-propietario','veh-serie','veh-placa','veh-anio','veh-marca','veh-modelo',
    'veh-version','veh-fecha-factura','veh-importe-factura','veh-motor','veh-clave',
