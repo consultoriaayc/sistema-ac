@@ -255,6 +255,20 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 .save-dot{width:6px;height:6px;border-radius:50%;background:currentColor;}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
+
+function asignarCVTramite(tramiteId,e){
+  e.stopPropagation();
+  ctaTramiteId=tramiteId;
+  ctaVehSeleccionado=null;
+  var t=tramites.find(function(x){return x.id===tramiteId;});
+  document.getElementById('mcta-title').textContent='Asignar vehículo — '+(t?t.owner:'');
+  document.getElementById('cta-buscar').value='';
+  document.getElementById('cta-resultados').innerHTML='';
+  document.getElementById('cta-veh-seleccionado').style.display='none';
+  document.getElementById('cta-error').style.display='none';
+  document.getElementById('modal-cta').classList.add('open');
+}
+
 // ── INIT ──
 supa=supabase.createClient(SUPA_URL,SUPA_KEY);
 cargarPrecios();
@@ -3595,6 +3609,20 @@ function openVehDetail(id){
   document.getElementById('modal-vehiculo').classList.add('open');
 }
 
+
+
+function asignarCVTramite(tramiteId,e){
+  e.stopPropagation();
+  ctaTramiteId=tramiteId;
+  ctaVehSeleccionado=null;
+  var t=tramites.find(function(x){return x.id===tramiteId;});
+  document.getElementById('mcta-title').textContent='Asignar vehículo — '+(t?t.owner:'');
+  document.getElementById('cta-buscar').value='';
+  document.getElementById('cta-resultados').innerHTML='';
+  document.getElementById('cta-veh-seleccionado').style.display='none';
+  document.getElementById('cta-error').style.display='none';
+  document.getElementById('modal-cta').classList.add('open');
+}
 
 // ── INIT ──
 supa=supabase.createClient(SUPA_URL,SUPA_KEY);
