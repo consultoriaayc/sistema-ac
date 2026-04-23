@@ -272,7 +272,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
     </div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
       <div class="save-ind" id="save-ind"><div class="save-dot"></div>
-    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.5</span><span id="save-txt">guardado</span></div>
+    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.6</span><span id="save-txt">guardado</span></div>
       <button onclick="exportarDatos()" style="padding:5px 12px;background:#059669;color:white;border:none;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Exportar</button>
       <label style="padding:5px 12px;background:#1e3a5f;color:white;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Importar<input type="file" id="import-file" accept=".json" style="display:none" onchange="importarDatos(this)"/></label>
       <div class="estado-badge">Morelos</div>
@@ -3554,259 +3554,36 @@ async function saveVehiculo(){
 }
 
 function openVehDetail(id){
-  // Por ahora abrir modal de edicion
   var v=vehiculos.find(function(x){return x.id===id;});
   if(!v)return;
   editingVehId=v.id;
   document.getElementById('mveh-title').textContent='Editar vehículo';
+  var cliWrap=document.getElementById('veh-cliente-wrap');
+  if(cliWrap)cliWrap.style.display='block';
   document.getElementById('veh-cliente-sel').value=v.clienteId||'';
-  document.getElementById('veh-propietario').value=v.propietario||'';
+  var propEl=document.getElementById('veh-propietario');
+  if(propEl)propEl.value=v.propietario||'';
   document.getElementById('veh-serie').value=v.numeroSerie||'';
   document.getElementById('veh-placa').value=v.placa||'';
-  document.getElementById('veh-entidad').value=v.entidad||'';
-  document.getElementById('veh-tipo').value=v.tipo||'';
   document.getElementById('veh-anio').value=v.anio||'';
-  // marca se pone via selector veh-marca-sel
   document.getElementById('veh-modelo').value=v.modelo||'';
   document.getElementById('veh-version').value=v.version||'';
+  var entEl=document.getElementById('veh-entidad');
+  if(entEl){var ent=catEntidades.find(function(e){return e.estado===v.entidad;});entEl.value=ent?ent.id_estado:'';}
+  var tipoEl=document.getElementById('veh-tipo');
+  if(tipoEl){var tip=catTiposPlaca.find(function(t){return t.tipo===v.tipo;});tipoEl.value=tip?tip.id_tipo:'';}
+  var marcaEl=document.getElementById('veh-marca-sel');
+  if(marcaEl){var marc=catMarcas.find(function(m){return m.marca===v.marca;});marcaEl.value=marc?marc.id_marca:'';}
   document.getElementById('veh-fecha-factura').value=v.fechaFactura||'';
   document.getElementById('veh-importe-factura').value=v.importeFactura||'';
   document.getElementById('veh-motor').value=v.numeroMotor||'';
   document.getElementById('veh-clave').value=v.claveVehicular||'';
   document.getElementById('veh-tc-venc').value=v.tarjetaCirculacionVencimiento||'';
-  document.getElementById('veh-aseguradora').value=v.aseguradora||'';
+  var asegEl=document.getElementById('veh-aseguradora');
+  if(asegEl){var aseg=catAseguradoras.find(function(a){return a.aseguradora===v.aseguradora;});asegEl.value=aseg?aseg.id_aseguradora:'';}
   document.getElementById('veh-poliza-venc').value=v.polizaVigencia||'';
   document.getElementById('veh-verif-venc').value=v.verificacionVigencia||'';
   document.getElementById('mveh-error').style.display='none';
   document.getElementById('modal-vehiculo').classList.add('open');
 }
 
-document.getElementById('modal-vehiculo').addEventListener('click',function(e){if(e.target.id==='modal-vehiculo')closeMVeh();});
-
-document.getElementById('modal-cta').addEventListener('click',function(e){if(e.target.id==='modal-cta')closeMCTA();});
-
-// ════════════════════════════════════════════
-// SUPABASE REALTIME — SINCRONIZACIÓN EN TIEMPO REAL
-// ════════════════════════════════════════════
-function iniciarRealtime(){
-  // Escuchar cambios en cotizaciones
-  supa.channel('cotizaciones-changes')
-    .on('postgres_changes',{event:'*',schema:'public',table:'cotizaciones'},function(payload){
-      var r=payload.new;
-      if(!r||!r.id)return;
-      if(payload.eventType==='DELETE'){
-        cotizaciones=cotizaciones.filter(function(c){return c.id!==payload.old.id;});
-      } else {
-        var cot={id:r.id,folio:r.folio,cliente:r.cliente,tramite:r.tramite,
-          total:r.total,empresa:r.empresa,estado:r.estado,tipo:r.tipo,
-          notas:r.notas,seg1:r.seg1,seg2:r.seg2,seg3:r.seg3,
-          seg1fecha:r.seg1fecha,seg2fecha:r.seg2fecha,seg3fecha:r.seg3fecha,ts:r.ts};
-        var idx=cotizaciones.findIndex(function(c){return c.id===r.id;});
-        if(idx>=0)cotizaciones[idx]=cot;
-        else cotizaciones.unshift(cot);
-      }
-      if(document.getElementById('view-seguimiento').style.display!=='none') renderSeguimiento();
-      updateBadges();
-    })
-    .subscribe();
-
-  // Escuchar cambios en tramites
-  supa.channel('tramites-changes')
-    .on('postgres_changes',{event:'*',schema:'public',table:'tramites'},function(payload){
-      var r=payload.new;
-      if(!r||!r.id)return;
-      if(payload.eventType==='DELETE'){
-        tramites=tramites.filter(function(t){return t.id!==payload.old.id;});
-      } else {
-        var tram={id:r.id,owner:r.owner,vehicle:r.vehicle,client:r.client,
-          type:r.type,notes:r.notes,stage:r.stage,stageTs:r.stage_ts,
-          createdTs:r.created_ts,cotId:r.cot_id,depositos:r.depositos||[],
-          gastos:r.gastos||[],depositoPendiente:r.deposito_pendiente,
-          clienteId:r.cliente_id,vehiculoId:r.vehiculo_id,
-          propietario:r.propietario||'',entidad:r.entidad||''};
-        var idx=tramites.findIndex(function(t){return t.id===r.id;});
-        if(idx>=0)tramites[idx]=tram;
-        else tramites.unshift(tram);
-      }
-      if(document.getElementById('view-tablero').style.display!=='none') renderBoard();
-      updateBadges();
-    })
-    .subscribe();
-
-  // Escuchar cambios en clientes
-  supa.channel('clientes-changes')
-    .on('postgres_changes',{event:'*',schema:'public',table:'clientes'},function(payload){
-      var r=payload.new;
-      if(!r||!r.id)return;
-      if(payload.eventType==='DELETE'){
-        clientes=clientes.filter(function(c){return c.id!==payload.old.id;});
-      } else {
-        var cli={id:r.id_cliente||r.id,nombre:r.nombre,telefono:r.celular||r.telefono||'',direccion:r.direccion||'',ts:r.ts||Date.now()};
-        var idx=clientes.findIndex(function(c){return c.id===r.id;});
-        if(idx>=0)clientes[idx]=cli;
-        else clientes.unshift(cli);
-      }
-      if(document.getElementById('view-clientes').style.display!=='none') renderClientes();
-    })
-    .subscribe();
-
-  // Escuchar cambios en vehiculos
-  supa.channel('vehiculos-changes')
-    .on('postgres_changes',{event:'*',schema:'public',table:'vehiculos'},function(payload){
-      var r=payload.new;
-      if(!r||!r.id)return;
-      if(payload.eventType==='DELETE'){
-        vehiculos=vehiculos.filter(function(v){return v.id!==payload.old.id;});
-      } else {
-        var veh={id:r.id,clienteId:r.cliente_id,propietario:r.propietario||'',
-          numeroSerie:r.numero_serie||'',fechaFactura:r.fecha_factura||'',
-          importeFactura:r.importe_factura||0,anio:r.anio||'',marca:r.marca||'',
-          modelo:r.modelo||'',version:r.version||'',tipo:r.tipo||'',
-          placa:r.placa||'',entidad:r.entidad||'',numeroMotor:r.numero_motor||'',
-          claveVehicular:r.clave_vehicular||'',
-          tarjetaCirculacionVencimiento:r.tarjeta_circulacion_vencimiento||'',
-          aseguradora:r.aseguradora||'',polizaVigencia:r.poliza_vigencia||'',
-          verificacionVigencia:r.verificacion_vigencia||'',ts:r.ts};
-        var idx=vehiculos.findIndex(function(v){return v.id===r.id;});
-        if(idx>=0)vehiculos[idx]=veh;
-        else vehiculos.unshift(veh);
-      }
-      if(document.getElementById('view-vehiculos').style.display!=='none') renderVehiculos();
-    })
-    .subscribe();
-
-  console.log('✅ Realtime activo — sincronizando 4 tablas');
-}
-
-
-// ── MODAL ASIGNAR VEHICULO (SIMPLIFICADO) ──
-var ctaVehSeleccionado=null;
-var ctaTramiteId=null;
-
-function asignarCVTramite(tramiteId,e){
-  e.stopPropagation();
-  ctaTramiteId=tramiteId;
-  ctaVehSeleccionado=null;
-  var t=tramites.find(function(x){return x.id===tramiteId;});
-  document.getElementById('mcta-title').textContent='Asignar vehículo — '+(t?t.owner:'');
-  document.getElementById('cta-buscar').value='';
-  document.getElementById('cta-resultados').innerHTML='';
-  document.getElementById('cta-veh-seleccionado').style.display='none';
-  document.getElementById('cta-error').style.display='none';
-  document.getElementById('modal-cta').classList.add('open');
-}
-
-function convertirATramite(cotId){
-  var c=cotizaciones.find(function(x){return x.id===cotId;});
-  if(!c)return;
-  ctaTramiteId=null;
-  ctaVehSeleccionado=null;
-  window._cotParaTramite=c;
-  document.getElementById('mcta-title').textContent='Asignar vehículo — '+c.cliente;
-  document.getElementById('cta-buscar').value='';
-  document.getElementById('cta-resultados').innerHTML='';
-  document.getElementById('cta-veh-seleccionado').style.display='none';
-  document.getElementById('cta-error').style.display='none';
-  document.getElementById('modal-cta').classList.add('open');
-}
-
-function buscarVehCTA(){
-  var q=document.getElementById('cta-buscar').value.trim().toLowerCase();
-  var resEl=document.getElementById('cta-resultados');
-  if(!q||q.length<2){resEl.innerHTML='';return;}
-  var results=vehiculos.filter(function(v){
-    return (v.numeroSerie||'').toLowerCase().includes(q)
-      ||(v.placa||'').toLowerCase().includes(q)
-      ||(v.propietario||'').toLowerCase().includes(q)
-      ||(v.marca||'').toLowerCase().includes(q)
-      ||(v.modelo||'').toLowerCase().includes(q);
-  }).slice(0,10);
-  if(!results.length){
-    resEl.innerHTML='<div style="font-size:12px;color:#9ca3af;padding:8px;">Sin resultados. <a href="#" onclick="closeMCTA();openNuevoVehiculo();return false;" style="color:#1e3a5f;">+ Dar de alta</a></div>';
-    return;
-  }
-    resEl.innerHTML=results.map(function(v){
-    var cli=clientes.find(function(c){return c.id==v.clienteId;});
-    var html='<div data-id="'+v.id+'" onclick="seleccionarVehCTA(this.dataset.id)" style="padding:10px 12px;border:1px solid #e5e7eb;border-radius:8px;margin-bottom:6px;cursor:pointer;background:white;">';
-    html+='<div style="font-size:13px;font-weight:700;color:#1f2937;">'+v.marca+' '+v.modelo+' '+v.anio+'</div>';
-    html+='<div style="font-size:11px;color:#6b7280;">Serie: '+v.numeroSerie+(v.placa?' · Placa: '+v.placa:'')+'</div>';
-    html+='<div style="font-size:11px;color:#6b7280;">Propietario: '+v.propietario+(cli?' · Cliente: '+cli.nombre:'')+'</div>';
-    html+='</div>';
-    return html;
-  }).join('');
-}
-
-function seleccionarVehCTA(vehId){
-  ctaVehSeleccionado=vehiculos.find(function(v){return v.id===vehId;});
-  if(!ctaVehSeleccionado)return;
-  var cli=clientes.find(function(c){return c.id==ctaVehSeleccionado.clienteId;});
-  document.getElementById('cta-veh-seleccionado').style.display='block';
-  document.getElementById('cta-veh-detalle').innerHTML=
-    '<div style="font-weight:700;">🚗 '+ctaVehSeleccionado.marca+' '+ctaVehSeleccionado.modelo+' '+ctaVehSeleccionado.anio+'</div>'
-    +'<div style="font-size:12px;color:#6b7280;margin-top:3px;">Serie: '+ctaVehSeleccionado.numeroSerie+(ctaVehSeleccionado.placa?' · Placa: '+ctaVehSeleccionado.placa:'')+'</div>'
-    +'<div style="font-size:12px;color:#6b7280;">Propietario: '+ctaVehSeleccionado.propietario+'</div>'
-    +(cli?'<div style="font-size:12px;color:#059669;margin-top:3px;">👤 Cliente: <strong>'+cli.nombre+'</strong></div>':'<div style="font-size:12px;color:#d97706;">⚠️ Sin cliente asignado</div>');
-  document.getElementById('cta-resultados').innerHTML='';
-  document.getElementById('cta-buscar').value='';
-}
-
-async function confirmarCTA(){
-  var errEl=document.getElementById('cta-error');
-  errEl.style.display='none';
-  if(!ctaVehSeleccionado){errEl.textContent='Selecciona un vehículo.';errEl.style.display='block';return;}
-  var veh=ctaVehSeleccionado;
-  var cli=clientes.find(function(c){return c.id==veh.clienteId;});
-  if(!cli){errEl.textContent='El vehículo no tiene cliente asignado. Edita el vehículo primero.';errEl.style.display='block';return;}
-
-  if(ctaTramiteId){
-    // Modo asignacion — tramite ya existe
-    var t=tramites.find(function(x){return x.id===ctaTramiteId;});
-    if(t){
-      t.clienteId=cli.id;t.vehiculoId=veh.id;
-      t.owner=cli.nombre;
-      t.vehicle=veh.marca+' '+veh.modelo+' '+veh.anio+(veh.placa?' '+veh.placa:'');
-      t.propietario=veh.propietario||'';
-      t.entidad=veh.entidad||'';
-      await supa.from('tramites').update({
-        cliente_id:parseInt(cli.id)||null,vehiculo_id:veh.id,
-        owner:t.owner,vehicle:t.vehicle,
-        propietario:t.propietario,entidad:t.entidad
-      }).eq('id',ctaTramiteId);
-    }
-    saveAll();closeMCTA();renderBoard();
-    alert('✅ Vehículo asignado correctamente.');
-  } else {
-    // Modo nuevo tramite desde cotizacion
-    var c=window._cotParaTramite;
-    if(!c)return;
-    var nuevo={
-      id:uid(),owner:cli.nombre,
-      vehicle:veh.marca+' '+veh.modelo+' '+veh.anio+(veh.placa?' '+veh.placa:''),
-      client:cli.nombre,type:c.tramite,
-      notes:'Cotizacion: '+mxn(c.total),
-      stage:'aceptacion',stageTs:Date.now(),createdTs:Date.now(),cotId:c.id,
-      depositos:[],gastos:[],depositoPendiente:false,
-      clienteId:cli.id,vehiculoId:veh.id,
-      propietario:veh.propietario||'',entidad:veh.entidad||''
-    };
-    tramites.unshift(nuevo);
-    c.estado='convertida';
-    saveAll();closeMCTA();renderSeguimiento();renderBoard();updateBadges();
-    alert('✅ Trámite creado para '+cli.nombre+'.');
-  }
-}
-
-function closeMCTA(){
-  document.getElementById('modal-cta').classList.remove('open');
-  ctaVehSeleccionado=null;ctaTramiteId=null;
-  window._cotParaTramite=null;
-}
-
-// ── INIT ──
-cargarPrecios();
-cargarTiposVehiculo();
-cargarCatalogos();
-cloudLoad().then(function(){iniciarRealtime();});
-</script>
-</body>
-</html>
