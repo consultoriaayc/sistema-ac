@@ -410,6 +410,7 @@ async function onCambioEstado(){
   cotHonorarios=hr.data||[];
   cotConceptos=cp.data||[];
   console.log('Estado cargado: '+cotDerechos.length+' derechos, '+cotHonorarios.length+' honorarios, '+cotConceptos.length+' conceptos');
+  poblarSelects();
   // Recalcular si hay tramite activo
   if(tramite)recalcularTramiteActivo();
 }
@@ -515,7 +516,7 @@ cloudLoad().then(function(){iniciarRealtime();});
     </div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
       <div class="save-ind" id="save-ind"><div class="save-dot"></div>
-    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.10</span><span id="save-txt">guardado</span></div>
+    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.11</span><span id="save-txt">guardado</span></div>
       <button onclick="exportarDatos()" style="padding:5px 12px;background:#059669;color:white;border:none;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Exportar</button>
       <label style="padding:5px 12px;background:#1e3a5f;color:white;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Importar<input type="file" id="import-file" accept=".json" style="display:none" onchange="importarDatos(this)"/></label>
       <div class="estado-badge">Morelos</div>
@@ -1800,7 +1801,27 @@ async function cargarPrecios(){
   }
 }
 function setSyncStatus(tipo,txt){const pill=document.getElementById('sync-pill');const span=document.getElementById('sync-txt');pill.className='sync-pill '+tipo;span.textContent=txt;}
-function poblarSelects(){const ids=['alta-empresa','ref-empresa','cam-empresa','pla-empresa','baja-empresa','ver-empresa','per-empresa'];ids.forEach(id=>{const sel=document.getElementById(id);if(!sel)return;const val=sel.value;sel.innerHTML='';empresas.forEach(emp=>{const opt=document.createElement('option');opt.value=emp;opt.textContent=emp==='publico'?'Público general':emp.charAt(0)+emp.slice(1).toLowerCase();sel.appendChild(opt);});if(val&&empresas.includes(val))sel.value=val;});}
+function poblarSelects(){
+  const ids=['alta-empresa','ref-empresa','cam-empresa','pla-empresa','baja-empresa','ver-empresa','per-empresa'];
+  // Obtener clientes con precio especial del estado actual
+  var clientesEspeciales=[];
+  if(cotHonorarios.length){
+    var idsConPrecio=[...new Set(cotHonorarios.filter(function(h){return h.id_cliente;}).map(function(h){return h.id_cliente;}))];
+    clientesEspeciales=clientes.filter(function(c){return idsConPrecio.includes(parseInt(c.id));});
+  }
+  ids.forEach(function(id){
+    const sel=document.getElementById(id);if(!sel)return;
+    const val=sel.value;
+    sel.innerHTML='<option value="publico">Público general</option>';
+    clientesEspeciales.forEach(function(c){
+      const opt=document.createElement('option');
+      opt.value=c.id;
+      opt.textContent=c.nombre;
+      sel.appendChild(opt);
+    });
+    if(val)sel.value=val;
+  });
+}
 function getP(empresa){return PRECIOS[empresa]||PRECIOS['publico'];}
 function selTab(t,btn){tramite=t;document.querySelectorAll('.tab').forEach(b=>{b.style.background='var(--card)';b.style.borderColor='var(--border)';b.style.boxShadow='var(--shadow)';});btn.style.background='var(--accent-light)';btn.style.borderColor='var(--accent)';btn.style.boxShadow='0 0 0 3px rgba(30,58,95,0.1)';document.getElementById('placeholder').classList.add('hidden');['alta','refrendo','cambio','placas','baja','verif','permiso','seguro'].forEach(x=>document.getElementById('form-'+x).classList.add('hidden'));document.getElementById('form-'+t).classList.remove('hidden');document.getElementById('gen-area').classList.remove('hidden');document.getElementById('result-card').classList.add('hidden');document.getElementById('gen-error').classList.add('hidden');if(t==='refrendo')calcRefrendo();if(t==='placas')calcPlacas();if(t==='baja')calcBaja();if(t==='alta')cambiarTipoAlta();if(t==='verif')calcVerif();if(t==='permiso')calcPermiso();if(t==='seguro'){document.getElementById('gen-area').classList.add('hidden');document.getElementById('result-card').classList.add('hidden');initTablaSeguro();}window.scrollTo({top:0,behavior:'smooth'});}
 function setRefTipo(tipo){refTipo=tipo;document.getElementById('ref-btn-existente').classList.toggle('active',tipo==='existente');document.getElementById('ref-btn-nuevo').classList.toggle('active',tipo==='nuevo');document.getElementById('ref-info-existente').classList.toggle('hidden',tipo!=='existente');document.getElementById('ref-info-nuevo').classList.toggle('hidden',tipo!=='nuevo');}
@@ -4016,6 +4037,7 @@ async function onCambioEstado(){
   cotHonorarios=hr.data||[];
   cotConceptos=cp.data||[];
   console.log('Estado cargado: '+cotDerechos.length+' derechos, '+cotHonorarios.length+' honorarios, '+cotConceptos.length+' conceptos');
+  poblarSelects();
   // Recalcular si hay tramite activo
   if(tramite)recalcularTramiteActivo();
 }
