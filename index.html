@@ -427,17 +427,17 @@ function getDerechoImporte(concepto, idTipoPlaca){
   return dr?parseFloat(dr.importe)||0:0;
 }
 
-function getHonorarioImporte(idTipoTramite, idCliente){
-  // Buscar honorario especial para el cliente
-  if(idCliente){
+function getHonorarioImporte(idTipoTramite, idEmpresa){
+  // Buscar honorario especial para la empresa
+  if(idEmpresa){
     var hr=cotHonorarios.find(function(h){
-      return h.id_tipo_tramite===idTipoTramite && h.id_cliente===idCliente;
+      return h.id_tipo_tramite===idTipoTramite && h.id_empresa===parseInt(idEmpresa);
     });
     if(hr)return parseFloat(hr.importe)||0;
   }
   // Buscar honorario publico general
   var hrPublico=cotHonorarios.find(function(h){
-    return h.id_tipo_tramite===idTipoTramite && !h.id_cliente;
+    return h.id_tipo_tramite===idTipoTramite && !h.id_empresa && !h.id_cliente;
   });
   return hrPublico?parseFloat(hrPublico.importe)||0:0;
 }
@@ -478,16 +478,14 @@ function recalcularTramiteActivo(){
 }
 
 function getEmpresaIdCliente(){
-  // Obtener id_cliente numerico del cliente seleccionado en el cotizador
+  // Obtener id_empresa del selector del cotizador
   var empresaMap={alta:'alta-empresa',refrendo:'ref-empresa',cambio:'cam-empresa',
     placas:'pla-empresa',baja:'baja-empresa',verif:'ver-empresa',permiso:'per-empresa'};
   var selId=tramite&&empresaMap[tramite]?empresaMap[tramite]:null;
   if(!selId)return null;
   var sel=document.getElementById(selId);
   if(!sel||sel.value==='publico'||!sel.value)return null;
-  // Buscar cliente por nombre en la lista de clientes
-  var cli=clientes.find(function(c){return c.nombre===sel.value;});
-  return cli?parseInt(cli.id)||null:null;
+  return parseInt(sel.value)||null;
 }
 
 
@@ -552,7 +550,7 @@ cloudLoad().then(function(){
     </div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
       <div class="save-ind" id="save-ind"><div class="save-dot"></div>
-    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.12</span><span id="save-txt">guardado</span></div>
+    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.13</span><span id="save-txt">guardado</span></div>
       <button onclick="exportarDatos()" style="padding:5px 12px;background:#059669;color:white;border:none;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Exportar</button>
       <label style="padding:5px 12px;background:#1e3a5f;color:white;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Importar<input type="file" id="import-file" accept=".json" style="display:none" onchange="importarDatos(this)"/></label>
       <div class="estado-badge">Morelos</div>
@@ -1512,6 +1510,7 @@ var catAseguradoras=[]; // {id_aseguradora, aseguradora}
 var catMarcas=[]; // {id_marca, marca}
 var catTiposPlaca=[]; // {id_tipo, tipo, derechos}
 var cotEstados=[]; // estados operacion
+var catEmpresas=[]; // empresas con precio especial
 var cotDerechos=[]; // derechos del estado seleccionado
 var cotHonorarios=[]; // honorarios del estado seleccionado
 var cotConceptos=[]; // conceptos del estado seleccionado
@@ -1716,9 +1715,10 @@ function mapTramite(nombre){
 }
 async function cargarCatalogos(){
   try{
-    const [ent,aseg,marc,tip]=await Promise.all([
-      sbGet('entidades'),sbGet('aseguradoras'),sbGet('marcas'),sbGet('tipos_placa')
+    const [ent,aseg,marc,tip,emp]=await Promise.all([
+      sbGet('entidades'),sbGet('aseguradoras'),sbGet('marcas'),sbGet('tipos_placa'),sbGet('empresas')
     ]);
+    catEmpresas=emp.filter(function(e){return e.activo;}).sort(function(a,b){return a.nombre.localeCompare(b.nombre);});
     catEntidades=ent.sort(function(a,b){return a.estado.localeCompare(b.estado);});
     catAseguradoras=aseg.sort(function(a,b){return a.aseguradora.localeCompare(b.aseguradora);});
     catMarcas=marc.sort(function(a,b){return a.marca.localeCompare(b.marca);});
@@ -1839,20 +1839,20 @@ async function cargarPrecios(){
 function setSyncStatus(tipo,txt){const pill=document.getElementById('sync-pill');const span=document.getElementById('sync-txt');pill.className='sync-pill '+tipo;span.textContent=txt;}
 function poblarSelects(){
   const ids=['alta-empresa','ref-empresa','cam-empresa','pla-empresa','baja-empresa','ver-empresa','per-empresa'];
-  // Obtener clientes con precio especial del estado actual
-  var clientesEspeciales=[];
+  // Obtener empresas con precio especial del estado actual
+  var empresasConPrecio=[];
   if(cotHonorarios.length){
-    var idsConPrecio=[...new Set(cotHonorarios.filter(function(h){return h.id_cliente;}).map(function(h){return h.id_cliente;}))];
-    clientesEspeciales=clientes.filter(function(c){return idsConPrecio.includes(parseInt(c.id));});
+    var idsConPrecio=[...new Set(cotHonorarios.filter(function(h){return h.id_empresa;}).map(function(h){return h.id_empresa;}))];
+    empresasConPrecio=catEmpresas.filter(function(e){return idsConPrecio.includes(e.id_empresa);});
   }
   ids.forEach(function(id){
     const sel=document.getElementById(id);if(!sel)return;
     const val=sel.value;
     sel.innerHTML='<option value="publico">Público general</option>';
-    clientesEspeciales.forEach(function(c){
+    empresasConPrecio.forEach(function(e){
       const opt=document.createElement('option');
-      opt.value=c.id;
-      opt.textContent=c.nombre;
+      opt.value=e.id_empresa;
+      opt.textContent=e.nombre;
       sel.appendChild(opt);
     });
     if(val)sel.value=val;
@@ -4090,17 +4090,17 @@ function getDerechoImporte(concepto, idTipoPlaca){
   return dr?parseFloat(dr.importe)||0:0;
 }
 
-function getHonorarioImporte(idTipoTramite, idCliente){
-  // Buscar honorario especial para el cliente
-  if(idCliente){
+function getHonorarioImporte(idTipoTramite, idEmpresa){
+  // Buscar honorario especial para la empresa
+  if(idEmpresa){
     var hr=cotHonorarios.find(function(h){
-      return h.id_tipo_tramite===idTipoTramite && h.id_cliente===idCliente;
+      return h.id_tipo_tramite===idTipoTramite && h.id_empresa===parseInt(idEmpresa);
     });
     if(hr)return parseFloat(hr.importe)||0;
   }
   // Buscar honorario publico general
   var hrPublico=cotHonorarios.find(function(h){
-    return h.id_tipo_tramite===idTipoTramite && !h.id_cliente;
+    return h.id_tipo_tramite===idTipoTramite && !h.id_empresa && !h.id_cliente;
   });
   return hrPublico?parseFloat(hrPublico.importe)||0:0;
 }
@@ -4141,16 +4141,14 @@ function recalcularTramiteActivo(){
 }
 
 function getEmpresaIdCliente(){
-  // Obtener id_cliente numerico del cliente seleccionado en el cotizador
+  // Obtener id_empresa del selector del cotizador
   var empresaMap={alta:'alta-empresa',refrendo:'ref-empresa',cambio:'cam-empresa',
     placas:'pla-empresa',baja:'baja-empresa',verif:'ver-empresa',permiso:'per-empresa'};
   var selId=tramite&&empresaMap[tramite]?empresaMap[tramite]:null;
   if(!selId)return null;
   var sel=document.getElementById(selId);
   if(!sel||sel.value==='publico'||!sel.value)return null;
-  // Buscar cliente por nombre en la lista de clientes
-  var cli=clientes.find(function(c){return c.nombre===sel.value;});
-  return cli?parseInt(cli.id)||null:null;
+  return parseInt(sel.value)||null;
 }
 
 
