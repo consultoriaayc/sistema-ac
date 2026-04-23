@@ -272,7 +272,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
     </div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
       <div class="save-ind" id="save-ind"><div class="save-dot"></div>
-    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.2</span><span id="save-txt">guardado</span></div>
+    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.3</span><span id="save-txt">guardado</span></div>
       <button onclick="exportarDatos()" style="padding:5px 12px;background:#059669;color:white;border:none;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Exportar</button>
       <label style="padding:5px 12px;background:#1e3a5f;color:white;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Importar<input type="file" id="import-file" accept=".json" style="display:none" onchange="importarDatos(this)"/></label>
       <div class="estado-badge">Morelos</div>
@@ -1126,66 +1126,28 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
   </div>
 </div>
 
-<!-- MODAL CONVERTIR A TRAMITE -->
+<!-- MODAL ASIGNAR VEHICULO -->
 <div class="modal-overlay" id="modal-cta">
-  <div class="modal" style="max-width:500px;">
-    <h2>Convertir a trámite</h2>
-
-    <!-- Tipo de tramite -->
-    <div class="form-group">
-      <label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:6px;">Tipo de trámite</label>
-      <select id="cta-tramite-tipo" style="width:100%;padding:11px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:Inter,sans-serif;color:var(--text);background:white;">
-        <option>Alta de auto nuevo</option>
-        <option>Alta de seminuevo</option>
-        <option>Alta de foráneo</option>
-        <option>Refrendo / tenencia</option>
-        <option>Cambio de propietario</option>
-        <option>Reposición de placas</option>
-        <option>Baja definitiva</option>
-        <option>Verificación vehicular</option>
-        <option>Permiso de carga</option>
-        <option>Seguro vehicular</option>
-      </select>
-    </div>
-
-    <!-- Buscar vehiculo -->
+  <div class="modal" style="max-width:480px;">
+    <h2 id="mcta-title">Asignar vehículo al trámite</h2>
     <div style="background:#eff6ff;border:1px solid #1e3a5f22;border-radius:10px;padding:14px;margin-bottom:12px;">
-      <div style="font-size:11px;font-weight:700;color:#1e3a5f;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">🚗 Vehículo</div>
-      <div class="form-group">
-        <label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:6px;">Número de serie <span style="color:#dc2626;">*</span></label>
-        <div style="display:flex;gap:8px;">
-          <input id="cta-serie" type="text" placeholder="Ingresa el número de serie..." style="flex:1;padding:11px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:Inter,sans-serif;outline:none;"/>
-          <button onclick="buscarVehiculoCTA()" style="padding:11px 16px;background:var(--brand-blue);color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;font-family:Inter,sans-serif;cursor:pointer;white-space:nowrap;">Buscar</button>
-        </div>
+      <div style="font-size:11px;font-weight:700;color:#1e3a5f;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">🔍 Buscar vehículo</div>
+      <div style="display:flex;gap:8px;margin-bottom:10px;">
+        <input id="cta-buscar" type="text" placeholder="Número de serie, placa o propietario..." oninput="buscarVehCTA()" style="flex:1;padding:11px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:Inter,sans-serif;outline:none;"/>
       </div>
-      <div id="cta-veh-info" style="display:none;border-radius:8px;padding:10px 12px;font-size:13px;margin-top:4px;"></div>
-      <!-- Boton para dar de alta vehiculo nuevo -->
-      <div id="cta-veh-nuevo-btn" style="display:none;margin-top:8px;">
-        <button onclick="abrirAltaVehiculoCTA()" style="width:100%;padding:10px;background:#1e3a5f;color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;font-family:Inter,sans-serif;cursor:pointer;">+ Dar de alta este vehículo</button>
-      </div>
+      <div id="cta-resultados" style="max-height:250px;overflow-y:auto;"></div>
     </div>
-
-
-
-
-
-    <!-- Entidad -->
-    <div class="form-group">
-      <label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:6px;">Entidad</label>
-      <select id="cta-entidad" style="width:100%;padding:11px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:Inter,sans-serif;color:var(--text);background:white;">
-        <option value="">Selecciona estado...</option>
-      </select>
+    <div id="cta-veh-seleccionado" style="display:none;background:#ecfdf5;border:1px solid #059669;border-radius:10px;padding:14px;margin-bottom:12px;">
+      <div style="font-size:11px;font-weight:700;color:#059669;margin-bottom:8px;">✅ Vehículo seleccionado</div>
+      <div id="cta-veh-detalle" style="font-size:13px;color:#1f2937;"></div>
     </div>
-
     <div id="cta-error" style="display:none;background:var(--red-bg);color:var(--red);border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:8px;"></div>
-
     <div class="modal-footer">
       <button class="modal-cancel" onclick="closeMCTA()">Cancelar</button>
-      <button class="modal-save" onclick="confirmarCTA()">✅ Crear trámite</button>
+      <button class="modal-save" onclick="confirmarCTA()">✅ Asignar vehículo</button>
     </div>
   </div>
 </div>
-
 <!-- MODAL DETALLE TRÁMITE -->
 <div class="modal-overlay" id="modal-ktramite">
   <div class="modal">
@@ -2044,163 +2006,6 @@ function setCotEstado(id,estado){
 function deleteCot(id){
   if(!confirm('¿Eliminar esta cotización?'))return;
   cotizaciones=cotizaciones.filter(x=>x.id!==id);saveAll();renderSeguimiento();
-}
-function convertirATramite(id){
-  const c=cotizaciones.find(x=>x.id===id);if(!c)return;
-  window._cotParaTramite=c;
-  // Limpiar modal
-  document.getElementById('cta-serie').value='';
-  document.getElementById('cta-veh-info').style.display='none';
-  document.getElementById('cta-veh-nuevo-btn').style.display='none';
-  document.getElementById('cta-entidad').value='';
-  document.getElementById('cta-error').style.display='none';
-  document.getElementById('cta-tramite-tipo').value=c.tramite||'';
-  document.getElementById('modal-cta').classList.add('open');
-}
-
-function buscarVehiculoCTA(){
-  var serie=document.getElementById('cta-serie').value.trim().toUpperCase();
-  var infoEl=document.getElementById('cta-veh-info');
-  if(!serie){infoEl.style.display='none';return;}
-  var veh=vehiculos.find(function(v){return v.numeroSerie===serie;});
-  if(veh){
-    var cli=clientes.find(function(c){return c.id===veh.clienteId;});
-    document.getElementById('cta-veh-nuevo-btn').style.display='none';
-    infoEl.style.display='block';
-    infoEl.style.background='#ecfdf5';
-    infoEl.style.borderColor='#059669';
-    infoEl.style.border='1.5px solid #059669';
-    infoEl.innerHTML='<div style="font-size:12px;font-weight:700;color:#059669;margin-bottom:4px;">✅ Vehículo encontrado</div>'
-      +'<div style="font-size:13px;color:#1f2937;">🚗 <strong>'+veh.marca+' '+veh.modelo+' '+veh.anio+'</strong> · '+veh.placa+'</div>'
-      +'<div style="font-size:12px;color:#6b7280;margin-top:2px;">Propietario actual: '+(cli?cli.nombre:'Sin cliente asignado')+'</div>';
-    window._ctaVeh=veh;
-  } else {
-    infoEl.style.display='block';
-    infoEl.style.background='#fef3e2';
-    infoEl.style.borderColor='#d97706';
-    infoEl.innerHTML='<div style="font-size:12px;font-weight:700;color:#d97706;">⚠️ Vehículo no encontrado en la base de datos</div>'
-      +'<div style="font-size:12px;color:#6b7280;margin-top:2px;">Puedes darlo de alta con el botón de abajo.</div>';
-    infoEl.style.border='1.5px solid #d97706';
-    document.getElementById('cta-veh-nuevo-btn').style.display='block';
-    window._ctaVeh=null;
-  }
-}
-
-
-
-function abrirAltaVehiculoCTA(){
-  // Pasar la serie al formulario de alta de vehiculo y abrirlo
-  var serie=document.getElementById('cta-serie').value.trim().toUpperCase();
-  closeMCTA();
-  // Abrir modal de vehiculo con serie prellenada
-  openNuevoVehiculo();
-  setTimeout(function(){
-    var serieEl=document.getElementById('veh-serie');
-    if(serieEl)serieEl.value=serie;
-    // Guardar referencia para volver al CTA despues
-    window._ctaSerieTemp=serie;
-    window._ctaVuelve=true;
-  },100);
-}
-
-
-async function confirmarCTA(){
-  var serie=document.getElementById('cta-serie').value.trim().toUpperCase();
-  var tramiteTipo=document.getElementById('cta-tramite-tipo').value;
-  var errEl=document.getElementById('cta-error');
-  errEl.style.display='none';
-  var c=window._cotParaTramite;
-  if(!c)return;
-  if(!serie){errEl.textContent='El número de serie es obligatorio.';errEl.style.display='block';return;}
-
-  // Buscar vehiculo — puede ser el encontrado por busqueda o el recien dado de alta
-  var veh=window._ctaVeh||vehiculos.find(function(v){return v.numeroSerie===serie;});
-  if(!veh){
-    errEl.textContent='El vehículo no existe. Usa el botón "+ Dar de alta este vehículo".';
-    errEl.style.display='block';return;
-  }
-
-  // Cliente viene del vehiculo (campo veh-cliente-sel del formulario de vehiculo)
-  var cli=null;
-  if(veh.clienteId){
-    cli=clientes.find(function(x){return x.id==veh.clienteId;});
-  }
-  if(!cli){
-    errEl.textContent='El vehículo no tiene cliente asignado. Edita el vehículo y asigna un cliente.';
-    errEl.style.display='block';return;
-  }
-
-  // Tomar entidad y tipo del vehiculo
-  var entidad=veh.entidad||'';
-
-  // Modo asignacion (tramite ya existe) vs modo nuevo tramite
-  if(window._tramiteAsignarId){
-    var tExist=tramites.find(function(x){return x.id===window._tramiteAsignarId;});
-    if(tExist){
-      tExist.clienteId=cli.id;
-      tExist.vehiculoId=veh.id;
-      tExist.owner=cli.nombre;
-      tExist.vehicle=veh.marca+' '+veh.modelo+' '+veh.anio+(veh.placa?' '+veh.placa:'');
-      tExist.propietario=veh.propietario||'';
-      tExist.entidad=entidad;
-      await supa.from('tramites').update({
-        cliente_id:parseInt(cli.id)||null,
-        vehiculo_id:veh.id,
-        owner:tExist.owner,
-        vehicle:tExist.vehicle,
-        propietario:tExist.propietario,
-        entidad:entidad
-      }).eq('id',window._tramiteAsignarId);
-    }
-    saveAll();
-    closeMCTA();
-    renderBoard();
-    alert('✅ Cliente y vehículo asignados correctamente.');
-  } else {
-    // Crear tramite nuevo
-    var nuevo={
-      id:uid(),owner:cli.nombre,
-      vehicle:veh.marca+' '+veh.modelo+' '+veh.anio+(veh.placa?' '+veh.placa:''),
-      client:cli.nombre,type:tramiteTipo||c.tramite,
-      notes:'Cotizacion: '+mxn(c.total),
-      stage:'aceptacion',stageTs:Date.now(),createdTs:Date.now(),cotId:c.id,
-      depositos:[],gastos:[],depositoPendiente:false,
-      clienteId:cli.id,vehiculoId:veh.id,
-      propietario:veh.propietario||'',entidad:entidad
-    };
-    tramites.unshift(nuevo);
-    c.estado='convertida';
-    saveAll();
-    closeMCTA();
-    renderSeguimiento();
-    renderBoard();
-    updateBadges();
-    alert('✅ Trámite creado para '+cli.nombre+'.');
-  }
-}
-
-function asignarCVTramite(tramiteId,e){
-  e.stopPropagation();
-  var t=tramites.find(function(x){return x.id===tramiteId;});
-  if(!t)return;
-  window._cotParaTramite={cliente:t.owner,tramite:t.type,total:0};
-  window._tramiteAsignarId=tramiteId;
-  window._ctaVeh=null;
-  document.getElementById('cta-serie').value='';
-  document.getElementById('cta-veh-info').style.display='none';
-  document.getElementById('cta-veh-nuevo-btn').style.display='none';
-  document.getElementById('cta-entidad').value='';
-  document.getElementById('cta-error').style.display='none';
-  document.getElementById('cta-tramite-tipo').value=t.type||'';
-  document.getElementById('modal-cta').classList.add('open');
-}
-
-function closeMCTA(){
-  document.getElementById('modal-cta').classList.remove('open');
-  window._cotParaTramite=null;
-  window._ctaVeh=null;
-  window._ctaCli=null;
-  window._tramiteAsignarId=null;
 }
 function openCotDetail(id){
   const c=cotizaciones.find(x=>x.id===id);if(!c)return;
@@ -3837,6 +3642,130 @@ function iniciarRealtime(){
     .subscribe();
 
   console.log('✅ Realtime activo — sincronizando 4 tablas');
+}
+
+
+// ── MODAL ASIGNAR VEHICULO (SIMPLIFICADO) ──
+var ctaVehSeleccionado=null;
+var ctaTramiteId=null;
+
+function asignarCVTramite(tramiteId,e){
+  e.stopPropagation();
+  ctaTramiteId=tramiteId;
+  ctaVehSeleccionado=null;
+  var t=tramites.find(function(x){return x.id===tramiteId;});
+  document.getElementById('mcta-title').textContent='Asignar vehículo — '+(t?t.owner:'');
+  document.getElementById('cta-buscar').value='';
+  document.getElementById('cta-resultados').innerHTML='';
+  document.getElementById('cta-veh-seleccionado').style.display='none';
+  document.getElementById('cta-error').style.display='none';
+  document.getElementById('modal-cta').classList.add('open');
+}
+
+function convertirATramite(cotId){
+  var c=cotizaciones.find(function(x){return x.id===cotId;});
+  if(!c)return;
+  ctaTramiteId=null;
+  ctaVehSeleccionado=null;
+  window._cotParaTramite=c;
+  document.getElementById('mcta-title').textContent='Asignar vehículo — '+c.cliente;
+  document.getElementById('cta-buscar').value='';
+  document.getElementById('cta-resultados').innerHTML='';
+  document.getElementById('cta-veh-seleccionado').style.display='none';
+  document.getElementById('cta-error').style.display='none';
+  document.getElementById('modal-cta').classList.add('open');
+}
+
+function buscarVehCTA(){
+  var q=document.getElementById('cta-buscar').value.trim().toLowerCase();
+  var resEl=document.getElementById('cta-resultados');
+  if(!q||q.length<2){resEl.innerHTML='';return;}
+  var results=vehiculos.filter(function(v){
+    return (v.numeroSerie||'').toLowerCase().includes(q)
+      ||(v.placa||'').toLowerCase().includes(q)
+      ||(v.propietario||'').toLowerCase().includes(q)
+      ||(v.marca||'').toLowerCase().includes(q)
+      ||(v.modelo||'').toLowerCase().includes(q);
+  }).slice(0,10);
+  if(!results.length){
+    resEl.innerHTML='<div style="font-size:12px;color:#9ca3af;padding:8px;">Sin resultados. <a href="#" onclick="closeMCTA();openNuevoVehiculo();return false;" style="color:#1e3a5f;">+ Dar de alta</a></div>';
+    return;
+  }
+    resEl.innerHTML=results.map(function(v){
+    var cli=clientes.find(function(c){return c.id==v.clienteId;});
+    var html='<div data-id="'+v.id+'" onclick="seleccionarVehCTA(this.dataset.id)" style="padding:10px 12px;border:1px solid #e5e7eb;border-radius:8px;margin-bottom:6px;cursor:pointer;background:white;">';
+    html+='<div style="font-size:13px;font-weight:700;color:#1f2937;">'+v.marca+' '+v.modelo+' '+v.anio+'</div>';
+    html+='<div style="font-size:11px;color:#6b7280;">Serie: '+v.numeroSerie+(v.placa?' · Placa: '+v.placa:'')+'</div>';
+    html+='<div style="font-size:11px;color:#6b7280;">Propietario: '+v.propietario+(cli?' · Cliente: '+cli.nombre:'')+'</div>';
+    html+='</div>';
+    return html;
+  }).join('');
+}
+
+function seleccionarVehCTA(vehId){
+  ctaVehSeleccionado=vehiculos.find(function(v){return v.id===vehId;});
+  if(!ctaVehSeleccionado)return;
+  var cli=clientes.find(function(c){return c.id==ctaVehSeleccionado.clienteId;});
+  document.getElementById('cta-veh-seleccionado').style.display='block';
+  document.getElementById('cta-veh-detalle').innerHTML=
+    '<div style="font-weight:700;">🚗 '+ctaVehSeleccionado.marca+' '+ctaVehSeleccionado.modelo+' '+ctaVehSeleccionado.anio+'</div>'
+    +'<div style="font-size:12px;color:#6b7280;margin-top:3px;">Serie: '+ctaVehSeleccionado.numeroSerie+(ctaVehSeleccionado.placa?' · Placa: '+ctaVehSeleccionado.placa:'')+'</div>'
+    +'<div style="font-size:12px;color:#6b7280;">Propietario: '+ctaVehSeleccionado.propietario+'</div>'
+    +(cli?'<div style="font-size:12px;color:#059669;margin-top:3px;">👤 Cliente: <strong>'+cli.nombre+'</strong></div>':'<div style="font-size:12px;color:#d97706;">⚠️ Sin cliente asignado</div>');
+  document.getElementById('cta-resultados').innerHTML='';
+  document.getElementById('cta-buscar').value='';
+}
+
+async function confirmarCTA(){
+  var errEl=document.getElementById('cta-error');
+  errEl.style.display='none';
+  if(!ctaVehSeleccionado){errEl.textContent='Selecciona un vehículo.';errEl.style.display='block';return;}
+  var veh=ctaVehSeleccionado;
+  var cli=clientes.find(function(c){return c.id==veh.clienteId;});
+  if(!cli){errEl.textContent='El vehículo no tiene cliente asignado. Edita el vehículo primero.';errEl.style.display='block';return;}
+
+  if(ctaTramiteId){
+    // Modo asignacion — tramite ya existe
+    var t=tramites.find(function(x){return x.id===ctaTramiteId;});
+    if(t){
+      t.clienteId=cli.id;t.vehiculoId=veh.id;
+      t.owner=cli.nombre;
+      t.vehicle=veh.marca+' '+veh.modelo+' '+veh.anio+(veh.placa?' '+veh.placa:'');
+      t.propietario=veh.propietario||'';
+      t.entidad=veh.entidad||'';
+      await supa.from('tramites').update({
+        cliente_id:parseInt(cli.id)||null,vehiculo_id:veh.id,
+        owner:t.owner,vehicle:t.vehicle,
+        propietario:t.propietario,entidad:t.entidad
+      }).eq('id',ctaTramiteId);
+    }
+    saveAll();closeMCTA();renderBoard();
+    alert('✅ Vehículo asignado correctamente.');
+  } else {
+    // Modo nuevo tramite desde cotizacion
+    var c=window._cotParaTramite;
+    if(!c)return;
+    var nuevo={
+      id:uid(),owner:cli.nombre,
+      vehicle:veh.marca+' '+veh.modelo+' '+veh.anio+(veh.placa?' '+veh.placa:''),
+      client:cli.nombre,type:c.tramite,
+      notes:'Cotizacion: '+mxn(c.total),
+      stage:'aceptacion',stageTs:Date.now(),createdTs:Date.now(),cotId:c.id,
+      depositos:[],gastos:[],depositoPendiente:false,
+      clienteId:cli.id,vehiculoId:veh.id,
+      propietario:veh.propietario||'',entidad:veh.entidad||''
+    };
+    tramites.unshift(nuevo);
+    c.estado='convertida';
+    saveAll();closeMCTA();renderSeguimiento();renderBoard();updateBadges();
+    alert('✅ Trámite creado para '+cli.nombre+'.');
+  }
+}
+
+function closeMCTA(){
+  document.getElementById('modal-cta').classList.remove('open');
+  ctaVehSeleccionado=null;ctaTramiteId=null;
+  window._cotParaTramite=null;
 }
 
 // ── INIT ──
