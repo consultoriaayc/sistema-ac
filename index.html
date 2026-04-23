@@ -515,7 +515,7 @@ cloudLoad().then(function(){iniciarRealtime();});
     </div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
       <div class="save-ind" id="save-ind"><div class="save-dot"></div>
-    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.8</span><span id="save-txt">guardado</span></div>
+    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.10</span><span id="save-txt">guardado</span></div>
       <button onclick="exportarDatos()" style="padding:5px 12px;background:#059669;color:white;border:none;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Exportar</button>
       <label style="padding:5px 12px;background:#1e3a5f;color:white;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Importar<input type="file" id="import-file" accept=".json" style="display:none" onchange="importarDatos(this)"/></label>
       <div class="estado-badge">Morelos</div>
@@ -535,18 +535,20 @@ cloudLoad().then(function(){iniciarRealtime();});
   </div>
 </div>
 
-<!-- SYNC BAR -->
-<div class="sync-bar" style="display:flex;align-items:center;gap:10px;">
-  <div class="sync-pill loading" id="sync-pill">
-    <div class="sync-dot"></div><span id="sync-txt">Cargando precios...</span>
-  </div>
-  <button onclick="cargarPrecios()" style="font-size:11px;padding:4px 12px;border:1px solid var(--border-strong);border-radius:20px;background:white;color:var(--text-2);cursor:pointer;font-family:Inter,sans-serif;">Actualizar precios</button>
-</div>
+
 
 <!-- ══════════════════════════════════════════
      VISTA 1: COTIZADOR
 ══════════════════════════════════════════ -->
 <div id="view-cotizador" class="main">
+
+  <!-- SELECTOR ESTADO GLOBAL -->
+  <div class="card" style="margin-bottom:12px;background:var(--accent-light);border:1.5px solid var(--accent);">
+    <div class="card-title" style="color:var(--accent-text);">Estado</div>
+    <select id="cot-estado" onchange="onCambioEstado()" style="width:100%;padding:12px 14px;border:1.5px solid var(--accent);border-radius:var(--radius-sm);font-size:15px;font-family:Inter,sans-serif;color:var(--text);background:white;font-weight:600;">
+      <option value="">Selecciona el estado...</option>
+    </select>
+  </div>
 
   <div class="tabs-wrap" style="padding:0 0 12px;">
     <div class="tabs" style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;">
@@ -701,12 +703,6 @@ cloudLoad().then(function(){iniciarRealtime();});
 
   <!-- REFRENDO -->
   <div id="form-refrendo" class="hidden">
-    <div class="card" style="margin-bottom:12px;">
-      <div class="card-title">Estado</div>
-      <select id="cot-estado" onchange="onCambioEstado()" style="width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:15px;font-family:Inter,sans-serif;color:var(--text);background:white;font-weight:600;">
-        <option value="">Selecciona el estado...</option>
-      </select>
-    </div>
     <div class="card">
       <div class="card-title">Tipo de cliente</div>
       <div class="tipo-grid">
