@@ -272,7 +272,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
     </div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
       <div class="save-ind" id="save-ind"><div class="save-dot"></div>
-    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.3</span><span id="save-txt">guardado</span></div>
+    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.5</span><span id="save-txt">guardado</span></div>
       <button onclick="exportarDatos()" style="padding:5px 12px;background:#059669;color:white;border:none;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Exportar</button>
       <label style="padding:5px 12px;background:#1e3a5f;color:white;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Importar<input type="file" id="import-file" accept=".json" style="display:none" onchange="importarDatos(this)"/></label>
       <div class="estado-badge">Morelos</div>
@@ -3194,15 +3194,17 @@ function renderClientes(){
   lista.innerHTML=filtered.map(function(c){
     var nTram=tramites.filter(function(t){return(t.owner||'').toUpperCase()===(c.nombre||'').toUpperCase();}).length;
     var nCot=cotizaciones.filter(function(x){return(x.cliente||'').toUpperCase()===(c.nombre||'').toUpperCase();}).length;
-    return '<div class="card" style="cursor:pointer;margin-bottom:10px;" data-id="'+c.id+'" onclick="openClienteDetail(this.dataset.id)">'
+    return '<div class="card" style="margin-bottom:10px;">'
       +'<div style="display:flex;justify-content:space-between;align-items:center;">'
-      +'<div>'
+      +'<div style="cursor:pointer;flex:1;" data-id="'+c.id+'" onclick="openClienteDetail(this.dataset.id)">'
       +'<div style="font-size:15px;font-weight:700;color:var(--text);">'+c.nombre+'</div>'
       +'<div style="font-size:12px;color:var(--text-2);margin-top:3px;">📱 '+c.telefono+(c.direccion?' · 📍 '+c.direccion:'')+'</div>'
       +'</div>'
-      +'<div style="text-align:right;flex-shrink:0;margin-left:12px;">'
-      +(nTram>0?'<div style="font-size:11px;background:var(--accent-light);color:var(--brand-blue);border-radius:4px;padding:2px 8px;font-weight:700;margin-bottom:3px;">'+nTram+' trámite'+(nTram>1?'s':'')+'</div>':'')
-      +(nCot>0?'<div style="font-size:11px;background:var(--green-bg);color:var(--green);border-radius:4px;padding:2px 8px;font-weight:700;">'+nCot+' cot.'+'</div>':'')
+      +'<div style="display:flex;gap:6px;align-items:center;flex-shrink:0;margin-left:12px;">'
+      +(nTram>0?'<div style="font-size:11px;background:var(--accent-light);color:var(--brand-blue);border-radius:4px;padding:2px 8px;font-weight:700;">'+nTram+' trám.</div>':'')
+      +(nCot>0?'<div style="font-size:11px;background:var(--green-bg);color:var(--green);border-radius:4px;padding:2px 8px;font-weight:700;">'+nCot+' cot.</div>':'')
+      +'<button data-id="'+c.id+'" onclick="editarClienteBtn(this.dataset.id)" style="padding:5px 10px;background:var(--accent-light);color:var(--brand-blue);border:1px solid var(--accent);border-radius:6px;font-size:11px;font-weight:700;font-family:Inter,sans-serif;cursor:pointer;">✏️ Editar</button>'
+      +'<button data-id="'+c.id+'" onclick="eliminarClienteBtn(this.dataset.id)" style="padding:5px 10px;background:#fef2f2;color:#dc2626;border:1px solid #dc262633;border-radius:6px;font-size:11px;font-weight:700;font-family:Inter,sans-serif;cursor:pointer;">🗑</button>'
       +'</div>'
       +'</div>'
       +'</div>';
@@ -3242,12 +3244,22 @@ async function saveCliente(){
   if(dupNombre){errEl.textContent='Ya existe un cliente con ese nombre.';errEl.style.display='block';return;}
   if(dupTel){errEl.textContent='Ya existe un cliente con ese teléfono.';errEl.style.display='block';return;}
   var cli={id:editingClienteId||uid(),nombre:nombre,telefono:telefono,direccion:direccion,ts:Date.now()};
-  var {error}=await supa.from('clientes').upsert([{
-    id_cliente:cli.id,nombre:cli.nombre,celular:cli.telefono,direccion:cli.direccion,ts:cli.ts
-  }],{onConflict:'id_cliente'});
+  var payload={nombre:cli.nombre,celular:cli.telefono,direccion:cli.direccion,ts:cli.ts};
+  var error,data;
+  if(editingClienteId){
+    // Actualizar existente
+    payload.id_cliente=parseInt(editingClienteId);
+    var res=await supa.from('clientes').upsert([payload],{onConflict:'id_cliente'});
+    error=res.error;
+  } else {
+    // Nuevo — dejar que Supabase genere el id
+    var res=await supa.from('clientes').insert([payload]).select();
+    error=res.error;data=res.data;
+    if(!error&&data&&data[0])cli.id=data[0].id_cliente;
+  }
   if(error){errEl.textContent='Error al guardar: '+error.message;errEl.style.display='block';return;}
   if(editingClienteId){
-    var idx=clientes.findIndex(function(c){return c.id===editingClienteId;});
+    var idx=clientes.findIndex(function(c){return c.id==editingClienteId;});
     if(idx>=0)clientes[idx]=cli;
   } else {
     clientes.unshift(cli);
@@ -3298,6 +3310,28 @@ function openClienteDetail(id){
 function closeMClidDetail(){
   document.getElementById('modal-cliente-detail').classList.remove('open');
   detailClienteId=null;
+}
+
+function editarClienteBtn(id){
+  var c=clientes.find(function(x){return x.id==id;});
+  if(!c)return;
+  editingClienteId=c.id;
+  document.getElementById('mcli-title').textContent='Editar cliente';
+  document.getElementById('cli-nombre').value=c.nombre;
+  document.getElementById('cli-telefono').value=c.telefono||'';
+  document.getElementById('cli-direccion').value=c.direccion||'';
+  document.getElementById('mcli-error').style.display='none';
+  document.getElementById('modal-cliente').classList.add('open');
+}
+
+async function eliminarClienteBtn(id){
+  var c=clientes.find(function(x){return x.id==id;});
+  if(!c)return;
+  if(!confirm('¿Eliminar al cliente '+c.nombre+'? Esta acción no se puede deshacer.'))return;
+  var {error}=await supa.from('clientes').delete().eq('id_cliente',parseInt(id));
+  if(error){alert('Error al eliminar: '+error.message);return;}
+  clientes=clientes.filter(function(x){return x.id!=id;});
+  renderClientes();
 }
 
 function editarClienteActual(){
