@@ -550,7 +550,7 @@ cloudLoad().then(function(){
     </div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
       <div class="save-ind" id="save-ind"><div class="save-dot"></div>
-    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.17</span><span id="save-txt">guardado</span></div>
+    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.18</span><span id="save-txt">guardado</span></div>
       <button onclick="exportarDatos()" style="padding:5px 12px;background:#059669;color:white;border:none;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Exportar</button>
       <label style="padding:5px 12px;background:#1e3a5f;color:white;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Importar<input type="file" id="import-file" accept=".json" style="display:none" onchange="importarDatos(this)"/></label>
       <div class="estado-badge">Morelos</div>
@@ -1638,7 +1638,8 @@ async function cloudSave(){
       total:c.total||0,empresa:c.empresa||'publico',estado:c.estado||'pendiente',
       tipo:c.tipo||null,notas:c.notas||'',seg1:c.seg1||false,seg2:c.seg2||false,
       seg3:c.seg3||false,seg1fecha:c.seg1fecha||null,seg2fecha:c.seg2fecha||null,
-      seg3fecha:c.seg3fecha||null,ts:c.ts||Date.now()
+      seg3fecha:c.seg3fecha||null,marca:c.marca||null,modelo:c.modelo||null,
+      ts:c.ts||Date.now()
     };});
     const ingRows=ingresos.map(function(i){return{
       id:i.id,cliente:i.cliente||'',tramite:i.tramite||'',total:i.total||0,
