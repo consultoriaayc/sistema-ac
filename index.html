@@ -377,11 +377,124 @@ function closeMCTA(){
   window._cotParaTramite=null;
 }
 
+
+// ════════════════════════════════════════════
+// COTIZADOR — DATOS DESDE SUPABASE
+// ════════════════════════════════════════════
+async function cargarEstadosOperacion(){
+  var {data,error}=await supa.from('estados_operacion').select('*').eq('activo',true);
+  if(error){console.error('Error estados:',error);return;}
+  cotEstados=data||[];
+  var sel=document.getElementById('cot-estado');
+  if(!sel)return;
+  sel.innerHTML='<option value="">Selecciona el estado...</option>'
+    +cotEstados.map(function(e){return '<option value="'+e.id_estado_op+'">'+e.estado+'</option>';}).join('');
+  // Si solo hay un estado seleccionarlo automaticamente
+  if(cotEstados.length===1){
+    sel.value=cotEstados[0].id_estado_op;
+    onCambioEstado();
+  }
+}
+
+async function onCambioEstado(){
+  var sel=document.getElementById('cot-estado');
+  cotEstadoId=sel?parseInt(sel.value)||null:null;
+  if(!cotEstadoId)return;
+  // Cargar derechos, honorarios y conceptos del estado
+  var [dr,hr,cp]=await Promise.all([
+    supa.from('derechos').select('*').eq('id_estado_op',cotEstadoId).eq('activo',true),
+    supa.from('honorarios').select('*').eq('id_estado_op',cotEstadoId),
+    supa.from('conceptos_tramite').select('*').eq('id_estado_op',cotEstadoId).eq('activo',true)
+  ]);
+  cotDerechos=dr.data||[];
+  cotHonorarios=hr.data||[];
+  cotConceptos=cp.data||[];
+  console.log('Estado cargado: '+cotDerechos.length+' derechos, '+cotHonorarios.length+' honorarios, '+cotConceptos.length+' conceptos');
+  // Recalcular si hay tramite activo
+  if(tramite)recalcularTramiteActivo();
+}
+
+function getDerechoImporte(concepto, idTipoPlaca){
+  // Buscar en cotDerechos por concepto y tipo de placa
+  var dr=cotDerechos.find(function(d){
+    return d.concepto===concepto && (idTipoPlaca?d.id_tipo_placa===idTipoPlaca:!d.id_tipo_placa);
+  });
+  if(!dr&&idTipoPlaca){
+    // Buscar sin tipo de placa
+    dr=cotDerechos.find(function(d){return d.concepto===concepto;});
+  }
+  return dr?parseFloat(dr.importe)||0:0;
+}
+
+function getHonorarioImporte(idTipoTramite, idCliente){
+  // Buscar honorario especial para el cliente
+  if(idCliente){
+    var hr=cotHonorarios.find(function(h){
+      return h.id_tipo_tramite===idTipoTramite && h.id_cliente===idCliente;
+    });
+    if(hr)return parseFloat(hr.importe)||0;
+  }
+  // Buscar honorario publico general
+  var hrPublico=cotHonorarios.find(function(h){
+    return h.id_tipo_tramite===idTipoTramite && !h.id_cliente;
+  });
+  return hrPublico?parseFloat(hrPublico.importe)||0:0;
+}
+
+function getConceptoImporte(concepto){
+  var cp=cotConceptos.find(function(c){return c.concepto===concepto;});
+  return cp?parseFloat(cp.importe)||0:0;
+}
+
+function getConceptoIva(concepto){
+  var cp=cotConceptos.find(function(c){return c.concepto===concepto;});
+  return cp?cp.aplica_iva:false;
+}
+
+function getTipoTramiteId(nombreTramite){
+  // Mapear nombre de tramite a id en tipos_tramite
+  // Por ahora usamos el nombre directo hasta cargar la tabla
+  return null; // Se implementara cuando migremos calcAlta etc
+}
+
+function getIdTipoPlacaCotizador(){
+  // Obtener el id_tipo de la placa seleccionada en el cotizador actual
+  var tipoSel=document.getElementById('alta-veh-tipo');
+  if(!tipoSel||!tipoSel.value)return null;
+  var tip=catTiposPlaca.find(function(t){return t.id_tipo===parseInt(tipoSel.value);});
+  return tip?tip.id_tipo:null;
+}
+
+function recalcularTramiteActivo(){
+  if(!tramite)return;
+  if(tramite==='alta')calcAlta();
+  else if(tramite==='refrendo')calcRefrendo();
+  else if(tramite==='cambio')calcCambio();
+  else if(tramite==='placas')calcPlacas();
+  else if(tramite==='baja')calcBaja();
+  else if(tramite==='verif')calcVerif();
+  else if(tramite==='permiso')calcPermiso();
+}
+
+function getEmpresaIdCliente(){
+  // Obtener id_cliente numerico del cliente seleccionado en el cotizador
+  var empresaMap={alta:'alta-empresa',refrendo:'ref-empresa',cambio:'cam-empresa',
+    placas:'pla-empresa',baja:'baja-empresa',verif:'ver-empresa',permiso:'per-empresa'};
+  var selId=tramite&&empresaMap[tramite]?empresaMap[tramite]:null;
+  if(!selId)return null;
+  var sel=document.getElementById(selId);
+  if(!sel||sel.value==='publico'||!sel.value)return null;
+  // Buscar cliente por nombre en la lista de clientes
+  var cli=clientes.find(function(c){return c.nombre===sel.value;});
+  return cli?parseInt(cli.id)||null:null;
+}
+
 // ── INIT ──
 supa=supabase.createClient(SUPA_URL,SUPA_KEY);
 cargarPrecios();
 cargarTiposVehiculo();
 cargarCatalogos();
+cargarEstadosOperacion();
 cloudLoad().then(function(){iniciarRealtime();});
 
 </script>
@@ -402,7 +515,7 @@ cloudLoad().then(function(){iniciarRealtime();});
     </div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
       <div class="save-ind" id="save-ind"><div class="save-dot"></div>
-    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.7</span><span id="save-txt">guardado</span></div>
+    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.8</span><span id="save-txt">guardado</span></div>
       <button onclick="exportarDatos()" style="padding:5px 12px;background:#059669;color:white;border:none;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Exportar</button>
       <label style="padding:5px 12px;background:#1e3a5f;color:white;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Importar<input type="file" id="import-file" accept=".json" style="display:none" onchange="importarDatos(this)"/></label>
       <div class="estado-badge">Morelos</div>
@@ -588,6 +701,12 @@ cloudLoad().then(function(){iniciarRealtime();});
 
   <!-- REFRENDO -->
   <div id="form-refrendo" class="hidden">
+    <div class="card" style="margin-bottom:12px;">
+      <div class="card-title">Estado</div>
+      <select id="cot-estado" onchange="onCambioEstado()" style="width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:15px;font-family:Inter,sans-serif;color:var(--text);background:white;font-weight:600;">
+        <option value="">Selecciona el estado...</option>
+      </select>
+    </div>
     <div class="card">
       <div class="card-title">Tipo de cliente</div>
       <div class="tipo-grid">
@@ -1359,6 +1478,11 @@ var catEntidades=[]; // {id_estado, estado}
 var catAseguradoras=[]; // {id_aseguradora, aseguradora}
 var catMarcas=[]; // {id_marca, marca}
 var catTiposPlaca=[]; // {id_tipo, tipo, derechos}
+var cotEstados=[]; // estados operacion
+var cotDerechos=[]; // derechos del estado seleccionado
+var cotHonorarios=[]; // honorarios del estado seleccionado
+var cotConceptos=[]; // conceptos del estado seleccionado
+var cotEstadoId=null; // estado seleccionado
 
 // ── SUPABASE CONFIG ──
 const SUPA_URL='https://bcuqhmlvffaxrayhagoc.supabase.co';
@@ -1731,20 +1855,21 @@ function renderDesglose(containerId,items,total,empresa){
 }
 
 function calcAlta(){
+  if(!cotEstadoId){alert('Selecciona el estado primero.');return;}
   const tipo=getTipoAlta();
   const empresa=document.getElementById('alta-empresa')?.value||'publico';
-  const p=getP(empresa);
   const factura=document.getElementById('alta-factura-chk').checked;
   const adeudoOn=document.getElementById('alta-adeudo-chk').checked;
   const adeudoMonto=parseFloat(document.getElementById('alta-adeudo-monto').value)||0;
-  const valorGeneral=0;
+  const idTipoPlaca=getIdTipoPlacaCotizador();
+  const idCliente=getEmpresaIdCliente();
   const items=[];let total=0;let baseIva=0;
 
+  // Honorarios desde Supabase
+  const HON_ALTA=getHonorarioImporte(1,idCliente)||2500; // id 1 = Alta de auto nuevo
+
   function gratificacion(valor){
-    if(valor>999999){
-      const g=valor*0.001;
-      return Math.floor(g/100)*100;
-    }
+    if(valor>999999){return Math.floor(valor*0.001/100)*100;}
     return 0;
   }
 
@@ -1765,16 +1890,18 @@ function calcAlta(){
     }
   }
 
+  // Derechos desde Supabase
+  const derAlt=getDerechoImporte('Derechos de alta',idTipoPlaca)||1290;
+
   if(tipo==='nuevo'){
     const tenMonto=procesarTenencia('alta-fecha','alta-alerta-dias','alta-tenencia-campo','alta-tenencia-monto');
     if(tenMonto>0){items.push({label:'Tenencia',val:tenMonto});total+=tenMonto;}
-    const derAlt=getDerechosPorTipo('alta-veh-tipo');items.push({label:'Derechos de alta',val:derAlt});total+=derAlt;
+    items.push({label:'Derechos de alta',val:derAlt});total+=derAlt;
     const valorFact=parseFloat(document.getElementById('alta-valor').value)||0;
     const grat=gratificacion(valorFact);
     if(grat>0){items.push({label:'Gratificacion (valor > $999,999)',val:grat});total+=grat;baseIva+=grat;}
     if(adeudoOn&&adeudoMonto>0){items.push({label:'Adeudos adicionales',val:adeudoMonto});total+=adeudoMonto;}
-    const hon=p.alta;
-    items.push({label:'Honorarios',val:hon});total+=hon;baseIva+=hon;
+    items.push({label:'Honorarios',val:HON_ALTA});total+=HON_ALTA;baseIva+=HON_ALTA;
     if(factura){const iva=Math.round(baseIva*0.16*100)/100;items.push({label:'IVA 16%',val:iva,esIva:true});total+=iva;}
 
   } else if(tipo==='seminuevo'||tipo==='seminuevo-cambio'){
@@ -1782,22 +1909,23 @@ function calcAlta(){
     const actaOn=document.getElementById('alta-sem-acta-chk')?.checked||false;
     const tenMonto=procesarTenencia('alta-sem-fecha','alta-sem-alerta-dias','alta-sem-tenencia-campo','alta-sem-tenencia-monto');
     if(tenMonto>0){items.push({label:'Tenencia',val:tenMonto});total+=tenMonto;}
-    const derAlt=getDerechosPorTipo('alta-veh-tipo');items.push({label:'Derechos de alta',val:derAlt});total+=derAlt;
-    const valorFact=parseFloat(document.getElementById('alta-sem-valor-fact').value)||valorGeneral;
+    items.push({label:'Derechos de alta',val:derAlt});total+=derAlt;
+    const valorFact=parseFloat(document.getElementById('alta-sem-valor-fact').value)||0;
     const grat=gratificacion(valorFact);
     if(grat>0){items.push({label:'Gratificacion (valor > $999,999)',val:grat});total+=grat;baseIva+=grat;}
     if(actaOn){
-      items.push({label:'Acta de extravio',val:600});total+=900;baseIva+=900;
-      items.push({label:'Sellos de no infraccion',val:880});total+=880;baseIva+=880;
+      const actaImp=getConceptoImporte('Acta de extravío')||600;
+      const sellosImp=getConceptoImporte('Sellos de no infracción')||880;
+      items.push({label:'Acta de extravio',val:actaImp});total+=actaImp;baseIva+=actaImp;
+      items.push({label:'Sellos de no infraccion',val:sellosImp});total+=sellosImp;baseIva+=sellosImp;
     }
-    const hon=p.alta;
     if(conCambio){
       const valorLibro=parseFloat(document.getElementById('alta-seminuevo-valor').value)||0;
       const derechosTC=valorLibro>0?Math.trunc(valorLibro*0.0125):0;
       if(derechosTC>0){items.push({label:'Derechos traslado de dominio',val:derechosTC});total+=derechosTC;}
     }
     if(adeudoOn&&adeudoMonto>0){items.push({label:'Adeudos adicionales',val:adeudoMonto});total+=adeudoMonto;}
-    items.push({label:'Honorarios',val:hon});total+=hon;baseIva+=hon;
+    items.push({label:'Honorarios',val:HON_ALTA});total+=HON_ALTA;baseIva+=HON_ALTA;
     if(factura){const iva=Math.round(baseIva*0.16*100)/100;items.push({label:'IVA 16%',val:iva,esIva:true});total+=iva;}
 
   } else if(tipo==='foraneo'||tipo==='foraneo-cambio'){
@@ -1807,24 +1935,31 @@ function calcAlta(){
     const actaOn=document.getElementById('alta-for-acta-chk')?.checked||false;
     const tenMonto=procesarTenencia('alta-for-fecha','alta-for-alerta-dias','alta-for-tenencia-campo','alta-for-tenencia-monto');
     if(tenMonto>0){items.push({label:'Tenencia',val:tenMonto});total+=tenMonto;}
-    const derAlt=getDerechosPorTipo('alta-veh-tipo');items.push({label:'Derechos de alta',val:derAlt});total+=derAlt;
-    if(!yaBaja){items.push({label:'Baja foranea',val:528});total+=528;}
-    if(actaOn){
-      items.push({label:'Acta de extravio',val:600});total+=900;baseIva+=900;
-      items.push({label:'Sellos de no infraccion',val:880});total+=880;baseIva+=880;
+    items.push({label:'Derechos de alta',val:derAlt});total+=derAlt;
+    if(!yaBaja){
+      const bajaFor=getDerechoImporte('Baja foranea',null)||528;
+      items.push({label:'Baja foranea',val:bajaFor});total+=bajaFor;
     }
-    if(tenenciasOtroEstado){items.push({label:'Validacion tenencias otro estado',val:900});total+=900;baseIva+=900;}
-    const valorFact=parseFloat(document.getElementById('alta-for-valor-fact').value)||valorGeneral;
+    if(actaOn){
+      const actaImp=getConceptoImporte('Acta de extravío')||600;
+      const sellosImp=getConceptoImporte('Sellos de no infracción')||880;
+      items.push({label:'Acta de extravio',val:actaImp});total+=actaImp;baseIva+=actaImp;
+      items.push({label:'Sellos de no infraccion',val:sellosImp});total+=sellosImp;baseIva+=sellosImp;
+    }
+    if(tenenciasOtroEstado){
+      const valImp=getConceptoImporte('Validación tenencias otro estado')||900;
+      items.push({label:'Validacion tenencias otro estado',val:valImp});total+=valImp;baseIva+=valImp;
+    }
+    const valorFact=parseFloat(document.getElementById('alta-for-valor-fact').value)||0;
     const grat=gratificacion(valorFact);
     if(grat>0){items.push({label:'Gratificacion (valor > $999,999)',val:grat});total+=grat;baseIva+=grat;}
-    const hon=p.alta;
     if(conCambio){
       const valorLibro=parseFloat(document.getElementById('alta-foraneo-valor').value)||0;
       const derechosTC=valorLibro>0?Math.trunc(valorLibro*0.0125):0;
       if(derechosTC>0){items.push({label:'Derechos traslado de dominio',val:derechosTC});total+=derechosTC;}
     }
     if(adeudoOn&&adeudoMonto>0){items.push({label:'Adeudos adicionales',val:adeudoMonto});total+=adeudoMonto;}
-    items.push({label:'Honorarios',val:hon});total+=hon;baseIva+=hon;
+    items.push({label:'Honorarios',val:HON_ALTA});total+=HON_ALTA;baseIva+=HON_ALTA;
     if(factura){const iva=Math.round(baseIva*0.16*100)/100;items.push({label:'IVA 16%',val:iva,esIva:true});total+=iva;}
   }
 
@@ -1833,88 +1968,102 @@ function calcAlta(){
 }
 
 function calcRefrendo(){
+  if(!cotEstadoId){alert('Selecciona el estado primero.');return;}
   const empresa=document.getElementById('ref-empresa')?.value||'publico';
-  const p=getP(empresa);
   const factura=document.getElementById('ref-factura-chk').checked;
   const adeudoOn=document.getElementById('ref-adeudo-chk').checked;
   const adeudoMonto=parseFloat(document.getElementById('ref-adeudo-monto').value)||0;
+  const idCliente=getEmpresaIdCliente();
   const items=[];let total=0;let baseIva=0;
   const autos=refVehiculos.filter(function(v){return v.tipo==='auto';}).length;
   const motos=refVehiculos.filter(function(v){return v.tipo==='moto';}).length;
-  if(autos>0){items.push({label:'Refrendo autos ('+autos+' x $880)',val:autos*880});total+=autos*880;}
-  if(motos>0){items.push({label:'Refrendo motos ('+motos+' x $469)',val:motos*469});total+=motos*469;}
+  const refAutoImp=getDerechoImporte('Refrendo AUTO',null)||880;
+  const refMotoImp=getDerechoImporte('Refrendo MOTO',null)||469;
+  const HON_REF=getHonorarioImporte(4,idCliente)||490; // id 4 = Refrendo
+  if(autos>0){items.push({label:'Refrendo autos ('+autos+' x $'+refAutoImp+')',val:autos*refAutoImp});total+=autos*refAutoImp;}
+  if(motos>0){items.push({label:'Refrendo motos ('+motos+' x $'+refMotoImp+')',val:motos*refMotoImp});total+=motos*refMotoImp;}
   if(adeudoOn&&adeudoMonto>0){items.push({label:'Recargos / adeudos verificados',val:adeudoMonto});total+=adeudoMonto;}
   const totalVeh=autos+motos;
   if(totalVeh>0){
-    const hon=p.refrendo*totalVeh;
-    items.push({label:'Honorarios ('+totalVeh+' x $'+p.refrendo+')',val:hon});total+=hon;baseIva+=hon;
+    const hon=HON_REF*totalVeh;
+    items.push({label:'Honorarios ('+totalVeh+' x $'+HON_REF+')',val:hon});total+=hon;baseIva+=hon;
     if(factura){const iva=Math.round(baseIva*0.16*100)/100;items.push({label:'IVA 16%',val:iva,esIva:true});total+=iva;}
   }
   renderDesglose('ref-desglose',items,total,empresa);
 }
 
 function calcCambio(){
+  if(!cotEstadoId){alert('Selecciona el estado primero.');return;}
   const empresa=document.getElementById('cam-empresa')?.value||'publico';
-  const p=getP(empresa);
+  const idCliente=getEmpresaIdCliente();
   const valorLibro=parseFloat(document.getElementById('cam-valor').value)||0;
   const pago2026=document.getElementById('cam-2026-chk').checked;
   const factura=document.getElementById('cam-factura-chk').checked;
   const adeudoOn=document.getElementById('cam-adeudo-chk').checked;
   const adeudoMonto=parseFloat(document.getElementById('cam-adeudo-monto').value)||0;
+  const HON_CAM=getHonorarioImporte(6,idCliente)||2500;
   const items=[];let total=0;let baseIva=0;
   if(!pago2026){
     items.push({label:'Refrendo 2026',val:880});total+=880;
   } else {
-    items.push({label:'Reimpresion de tarjeta de circulacion',val:453});total+=453;
+    const reimp=getDerechoImporte('Reimpresión tarjeta circulación',null)||453;
+    items.push({label:'Reimpresion de tarjeta de circulacion',val:reimp});total+=reimp;
   }
   if(valorLibro>0){
     const derechosTC=Math.trunc(valorLibro*0.0125);
-    items.push({label:'Derechos traslado de dominio (1.25%)',val:derechosTC});
-    total+=derechosTC;
+    items.push({label:'Derechos traslado de dominio (1.25%)',val:derechosTC});total+=derechosTC;
   }
   if(adeudoOn&&adeudoMonto>0){items.push({label:'Adeudos adicionales',val:adeudoMonto});total+=adeudoMonto;}
-  const hon=p.cambio;
-  items.push({label:'Honorarios',val:hon});total+=hon;baseIva+=hon;
+  items.push({label:'Honorarios',val:HON_CAM});total+=HON_CAM;baseIva+=HON_CAM;
   if(factura){const iva=Math.round(baseIva*0.16*100)/100;items.push({label:'IVA 16%',val:iva,esIva:true});total+=iva;}
   renderDesglose('cam-desglose',items,total,empresa);
 }
 
 function calcPlacas(){
+  if(!cotEstadoId){alert('Selecciona el estado primero.');return;}
   const empresa=document.getElementById('pla-empresa')?.value||'publico';
-  const p=getP(empresa);
+  const idCliente=getEmpresaIdCliente();
+  const idTipoPlaca=document.getElementById('pla-veh-tipo')?parseInt(document.getElementById('pla-veh-tipo').value)||null:null;
   const pago2026=document.getElementById('pla-2026-chk').checked;
   const factura=document.getElementById('pla-factura-chk').checked;
   const adeudoOn=document.getElementById('pla-adeudo-chk').checked;
   const adeudoMonto=parseFloat(document.getElementById('pla-adeudo-monto').value)||0;
   const actaOn=document.getElementById('pla-acta-chk')?.checked||false;
+  const HON_PLA=getHonorarioImporte(7,idCliente)||2500;
+  const derAlt=getDerechoImporte('Derechos de alta',idTipoPlaca)||1290;
+  const derBaj=getDerechoImporte('Derechos de baja',null)||235;
   const items=[];let total=0;let baseIva=0;
-  const derAlt=getDerechosPorTipo('alta-veh-tipo');items.push({label:'Derechos de alta',val:derAlt});total+=derAlt;
-  items.push({label:'Derechos de baja',val:235});total+=235;
+  items.push({label:'Derechos de alta',val:derAlt});total+=derAlt;
+  items.push({label:'Derechos de baja',val:derBaj});total+=derBaj;
   if(!pago2026){items.push({label:'Refrendo 2026 pendiente',val:880});total+=880;}
   if(actaOn){
-    items.push({label:'Acta de extravio',val:600});total+=900;baseIva+=900;
-    items.push({label:'Sellos de no infraccion',val:880});total+=880;baseIva+=880;
+    const actaImp=getConceptoImporte('Acta de extravío')||600;
+    const sellosImp=getConceptoImporte('Sellos de no infracción')||880;
+    items.push({label:'Acta de extravio',val:actaImp});total+=actaImp;baseIva+=actaImp;
+    items.push({label:'Sellos de no infraccion',val:sellosImp});total+=sellosImp;baseIva+=sellosImp;
   }
   if(adeudoOn&&adeudoMonto>0){items.push({label:'Adeudos adicionales',val:adeudoMonto});total+=adeudoMonto;}
-  const hon=p.placas;
-  items.push({label:'Honorarios',val:hon});total+=hon;baseIva+=hon;
+  items.push({label:'Honorarios',val:HON_PLA});total+=HON_PLA;baseIva+=HON_PLA;
   if(factura){const iva=Math.round(baseIva*0.16*100)/100;items.push({label:'IVA 16%',val:iva,esIva:true});total+=iva;}
   renderDesglose('pla-desglose',items,total,empresa);
 }
 
 function calcBaja(){
+  if(!cotEstadoId){alert('Selecciona el estado primero.');return;}
   const empresa=document.getElementById('baja-empresa')?.value||'publico';
-  const p=getP(empresa);
+  const idCliente=getEmpresaIdCliente();
   const factura=document.getElementById('baja-factura-chk').checked;
   const pago2026=document.getElementById('baja-2026-chk').checked;
   const adeudoOn=document.getElementById('baja-adeudo-chk').checked;
   const adeudoMonto=parseFloat(document.getElementById('baja-adeudo-monto').value)||0;
+  const idTipoPlaca=document.getElementById('baja-veh-tipo')?parseInt(document.getElementById('baja-veh-tipo').value)||null:null;
+  const HON_BAJ=getHonorarioImporte(8,idCliente)||1900;
+  const derBaj=getDerechoImporte('Derechos de alta',idTipoPlaca)||235;
   const items=[];let total=0;let baseIva=0;
-  const derBaj=getDerechosPorTipo('baja-veh-tipo');items.push({label:'Derechos de baja definitiva',val:derBaj||235});total+=(derBaj||235);
+  items.push({label:'Derechos de baja definitiva',val:derBaj});total+=derBaj;
   if(!pago2026){items.push({label:'Derechos refrendo 2026',val:880});total+=880;}
   if(adeudoOn&&adeudoMonto>0){items.push({label:'Adeudos anteriores',val:adeudoMonto});total+=adeudoMonto;}
-  const hon=p.baja||p.alta||1900;
-  items.push({label:'Honorarios',val:hon});total+=hon;baseIva+=hon;
+  items.push({label:'Honorarios',val:HON_BAJ});total+=HON_BAJ;baseIva+=HON_BAJ;
   if(factura){const iva=Math.round(baseIva*0.16*100)/100;items.push({label:'IVA 16%',val:iva,esIva:true});total+=iva;}
   renderDesglose('baja-desglose',items,total,empresa);
 }
@@ -2308,43 +2457,41 @@ function editMKT(){
 
 // ── CALCULO VERIFICACION ──
 function calcVerif(){
-  var empresa=document.getElementById('ver-empresa')?.value||'publico';
-  var p=getP(empresa);
-  var multa=document.getElementById('ver-multa-chk').checked;
-  var refrendo=document.getElementById('ver-refrendo-chk').checked;
-  var factura=document.getElementById('ver-factura-chk').checked;
-  var items=[];var total=0;
-  items.push({label:'Derechos de verificacion',val:765});total+=765;
-  if(multa){items.push({label:'Multa por verificacion',val:1642});total+=1642;}
-  if(!refrendo){
-    items.push({label:'Refrendo 2026',val:880});total+=880;
-    items.push({label:'Honorarios refrendo',val:p.refrendo});total+=p.refrendo;
-  }
-  items.push({label:'Honorarios verificacion',val:490});total+=490;
-  if(factura){var iva=490*0.16;items.push({label:'IVA 16% (honorarios)',val:iva,esIva:true});total+=iva;}
+  if(!cotEstadoId){alert('Selecciona el estado primero.');return;}
+  const empresa=document.getElementById('ver-empresa')?.value||'publico';
+  const idCliente=getEmpresaIdCliente();
+  const factura=document.getElementById('ver-factura-chk').checked;
+  const multa=document.getElementById('ver-multa-chk').checked;
+  const refrendo=document.getElementById('ver-refrendo-chk').checked;
+  const HON_VER=getHonorarioImporte(9,idCliente)||490;
+  const derVer=getDerechoImporte('Verificación',null)||765;
+  const items=[];let total=0;let baseIva=0;
+  items.push({label:'Derechos de verificacion',val:derVer});total+=derVer;
+  if(multa){items.push({label:'Multa por no verificar',val:1642});total+=1642;}
+  if(refrendo){items.push({label:'Refrendo pendiente',val:880});total+=880;}
+  items.push({label:'Honorarios',val:HON_VER});total+=HON_VER;baseIva+=HON_VER;
+  if(factura){const iva=Math.round(baseIva*0.16*100)/100;items.push({label:'IVA 16%',val:iva,esIva:true});total+=iva;}
   renderDesglose('ver-desglose',items,total,empresa);
 }
 
-// ── CALCULO PERMISO DE CARGA ──
 function calcPermiso(){
-  var empresa=document.getElementById('per-empresa')?.value||'publico';
-  var p=getP(empresa);
-  var factura=document.getElementById('per-factura-chk').checked;
-  var permiso=p.permiso||950;
-  var revista=p.revista||1650;
-  var items=[];var total=0;var baseIva=0;
-  items.push({label:'Permiso de carga',val:permiso});total+=permiso;baseIva+=permiso;
-  items.push({label:'Revista mecanica',val:revista});total+=revista;baseIva+=revista;
-  if(factura){var iva=Math.round(baseIva*0.16*100)/100;items.push({label:'IVA 16%',val:iva,esIva:true});total+=iva;}
-  // Actualizar etiquetas de precio
-  var lbl=document.getElementById('per-precio-lbl');
-  var val=document.getElementById('per-precio-val');
-  var rlbl=document.getElementById('per-revista-lbl');
-  var rval=document.getElementById('per-revista-val');
-  if(lbl)lbl.textContent=empresa!=='publico'?'Precio especial '+empresa:'Precio publico general';
-  if(val)val.textContent='$'+permiso.toLocaleString('es-MX');
-  if(rlbl)rlbl.textContent=empresa!=='publico'?'Precio especial '+empresa:'Precio publico general';
-  if(rval)rval.textContent='$'+revista.toLocaleString('es-MX');
+  if(!cotEstadoId){alert('Selecciona el estado primero.');return;}
+  const empresa=document.getElementById('per-empresa')?.value||'publico';
+  const idCliente=getEmpresaIdCliente();
+  const factura=document.getElementById('per-factura-chk').checked;
+  const HON_PER=getHonorarioImporte(10,idCliente)||950;
+  const HON_REV=getHonorarioImporte(11,idCliente)||1650;
+  const items=[];let total=0;let baseIva=0;
+  items.push({label:'Permiso de carga',val:HON_PER});total+=HON_PER;baseIva+=HON_PER;
+  items.push({label:'Revista mecanica',val:HON_REV});total+=HON_REV;baseIva+=HON_REV;
+  if(factura){const iva=Math.round(baseIva*0.16*100)/100;items.push({label:'IVA 16%',val:iva,esIva:true});total+=iva;}
+  // Actualizar etiquetas
+  var lbl=document.getElementById('per-precio-lbl');var val=document.getElementById('per-precio-val');
+  var rlbl=document.getElementById('per-revista-lbl');var rval=document.getElementById('per-revista-val');
+  if(lbl)lbl.textContent=idCliente?'Precio especial':'Precio publico general';
+  if(val)val.textContent='$'+HON_PER.toLocaleString('es-MX');
+  if(rlbl)rlbl.textContent=idCliente?'Precio especial':'Precio publico general';
+  if(rval)rval.textContent='$'+HON_REV.toLocaleString('es-MX');
   renderDesglose('per-desglose',items,total,empresa);
 }
 
@@ -3840,11 +3987,124 @@ function closeMCTA(){
   window._cotParaTramite=null;
 }
 
+
+// ════════════════════════════════════════════
+// COTIZADOR — DATOS DESDE SUPABASE
+// ════════════════════════════════════════════
+async function cargarEstadosOperacion(){
+  var {data,error}=await supa.from('estados_operacion').select('*').eq('activo',true);
+  if(error){console.error('Error estados:',error);return;}
+  cotEstados=data||[];
+  var sel=document.getElementById('cot-estado');
+  if(!sel)return;
+  sel.innerHTML='<option value="">Selecciona el estado...</option>'
+    +cotEstados.map(function(e){return '<option value="'+e.id_estado_op+'">'+e.estado+'</option>';}).join('');
+  // Si solo hay un estado seleccionarlo automaticamente
+  if(cotEstados.length===1){
+    sel.value=cotEstados[0].id_estado_op;
+    onCambioEstado();
+  }
+}
+
+async function onCambioEstado(){
+  var sel=document.getElementById('cot-estado');
+  cotEstadoId=sel?parseInt(sel.value)||null:null;
+  if(!cotEstadoId)return;
+  // Cargar derechos, honorarios y conceptos del estado
+  var [dr,hr,cp]=await Promise.all([
+    supa.from('derechos').select('*').eq('id_estado_op',cotEstadoId).eq('activo',true),
+    supa.from('honorarios').select('*').eq('id_estado_op',cotEstadoId),
+    supa.from('conceptos_tramite').select('*').eq('id_estado_op',cotEstadoId).eq('activo',true)
+  ]);
+  cotDerechos=dr.data||[];
+  cotHonorarios=hr.data||[];
+  cotConceptos=cp.data||[];
+  console.log('Estado cargado: '+cotDerechos.length+' derechos, '+cotHonorarios.length+' honorarios, '+cotConceptos.length+' conceptos');
+  // Recalcular si hay tramite activo
+  if(tramite)recalcularTramiteActivo();
+}
+
+function getDerechoImporte(concepto, idTipoPlaca){
+  // Buscar en cotDerechos por concepto y tipo de placa
+  var dr=cotDerechos.find(function(d){
+    return d.concepto===concepto && (idTipoPlaca?d.id_tipo_placa===idTipoPlaca:!d.id_tipo_placa);
+  });
+  if(!dr&&idTipoPlaca){
+    // Buscar sin tipo de placa
+    dr=cotDerechos.find(function(d){return d.concepto===concepto;});
+  }
+  return dr?parseFloat(dr.importe)||0:0;
+}
+
+function getHonorarioImporte(idTipoTramite, idCliente){
+  // Buscar honorario especial para el cliente
+  if(idCliente){
+    var hr=cotHonorarios.find(function(h){
+      return h.id_tipo_tramite===idTipoTramite && h.id_cliente===idCliente;
+    });
+    if(hr)return parseFloat(hr.importe)||0;
+  }
+  // Buscar honorario publico general
+  var hrPublico=cotHonorarios.find(function(h){
+    return h.id_tipo_tramite===idTipoTramite && !h.id_cliente;
+  });
+  return hrPublico?parseFloat(hrPublico.importe)||0:0;
+}
+
+function getConceptoImporte(concepto){
+  var cp=cotConceptos.find(function(c){return c.concepto===concepto;});
+  return cp?parseFloat(cp.importe)||0:0;
+}
+
+function getConceptoIva(concepto){
+  var cp=cotConceptos.find(function(c){return c.concepto===concepto;});
+  return cp?cp.aplica_iva:false;
+}
+
+function getTipoTramiteId(nombreTramite){
+  // Mapear nombre de tramite a id en tipos_tramite
+  // Por ahora usamos el nombre directo hasta cargar la tabla
+  return null; // Se implementara cuando migremos calcAlta etc
+}
+
+function getIdTipoPlacaCotizador(){
+  // Obtener el id_tipo de la placa seleccionada en el cotizador actual
+  var tipoSel=document.getElementById('alta-veh-tipo');
+  if(!tipoSel||!tipoSel.value)return null;
+  var tip=catTiposPlaca.find(function(t){return t.id_tipo===parseInt(tipoSel.value);});
+  return tip?tip.id_tipo:null;
+}
+
+function recalcularTramiteActivo(){
+  if(!tramite)return;
+  if(tramite==='alta')calcAlta();
+  else if(tramite==='refrendo')calcRefrendo();
+  else if(tramite==='cambio')calcCambio();
+  else if(tramite==='placas')calcPlacas();
+  else if(tramite==='baja')calcBaja();
+  else if(tramite==='verif')calcVerif();
+  else if(tramite==='permiso')calcPermiso();
+}
+
+function getEmpresaIdCliente(){
+  // Obtener id_cliente numerico del cliente seleccionado en el cotizador
+  var empresaMap={alta:'alta-empresa',refrendo:'ref-empresa',cambio:'cam-empresa',
+    placas:'pla-empresa',baja:'baja-empresa',verif:'ver-empresa',permiso:'per-empresa'};
+  var selId=tramite&&empresaMap[tramite]?empresaMap[tramite]:null;
+  if(!selId)return null;
+  var sel=document.getElementById(selId);
+  if(!sel||sel.value==='publico'||!sel.value)return null;
+  // Buscar cliente por nombre en la lista de clientes
+  var cli=clientes.find(function(c){return c.nombre===sel.value;});
+  return cli?parseInt(cli.id)||null:null;
+}
+
 // ── INIT ──
 supa=supabase.createClient(SUPA_URL,SUPA_KEY);
 cargarPrecios();
 cargarTiposVehiculo();
 cargarCatalogos();
+cargarEstadosOperacion();
 cloudLoad().then(function(){iniciarRealtime();});
 </script>
 </body>
