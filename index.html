@@ -3595,3 +3595,13 @@ function openVehDetail(id){
   document.getElementById('modal-vehiculo').classList.add('open');
 }
 
+
+// ── INIT ──
+supa=supabase.createClient(SUPA_URL,SUPA_KEY);
+cargarPrecios();
+cargarTiposVehiculo();
+cargarCatalogos();
+cloudLoad().then(function(){iniciarRealtime();});
+</script>
+</body>
+</html>
