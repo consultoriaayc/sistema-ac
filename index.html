@@ -550,7 +550,7 @@ cloudLoad().then(function(){
     </div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
       <div class="save-ind" id="save-ind"><div class="save-dot"></div>
-    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.13</span><span id="save-txt">guardado</span></div>
+    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.14</span><span id="save-txt">guardado</span></div>
       <button onclick="exportarDatos()" style="padding:5px 12px;background:#059669;color:white;border:none;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Exportar</button>
       <label style="padding:5px 12px;background:#1e3a5f;color:white;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Importar<input type="file" id="import-file" accept=".json" style="display:none" onchange="importarDatos(this)"/></label>
       <div class="estado-badge">Morelos</div>
@@ -2476,10 +2476,10 @@ function openKDetail(id){
   const idx=stageIdx(t.stage);
   document.getElementById('mkt-title').textContent=t.owner+(t.vehicle?' — '+t.vehicle:'');
   document.getElementById('mkt-track').innerHTML=STAGES.map((s,i)=>`<div class="stage-dot ${i<idx?'done':i===idx?'current':''}" title="${s.label}"></div>`).join('');
-  document.getElementById('mkt-owner').textContent=t.owner;
+  document.getElementById('mkt-owner').textContent=t.propietario||t.owner||'—';
   document.getElementById('mkt-vehicle').textContent=t.vehicle||'—';
   const cw=document.getElementById('mkt-client-wrap');
-  if(t.client){cw.style.display='block';document.getElementById('mkt-client').textContent=t.client;}else cw.style.display='none';
+  if(t.owner){cw.style.display='block';document.getElementById('mkt-client').textContent=t.owner;}else cw.style.display='none';
   document.getElementById('mkt-type').textContent=t.type||'—';
   document.getElementById('mkt-stage').textContent=STAGES[idx]?.label||t.stage;
   const days=daysSince(t.stageTs);const dc=dC(days,t.stage);
