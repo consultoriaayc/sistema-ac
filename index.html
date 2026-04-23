@@ -550,7 +550,7 @@ cloudLoad().then(function(){
     </div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
       <div class="save-ind" id="save-ind"><div class="save-dot"></div>
-    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.16</span><span id="save-txt">guardado</span></div>
+    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.17</span><span id="save-txt">guardado</span></div>
       <button onclick="exportarDatos()" style="padding:5px 12px;background:#059669;color:white;border:none;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Exportar</button>
       <label style="padding:5px 12px;background:#1e3a5f;color:white;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Importar<input type="file" id="import-file" accept=".json" style="display:none" onchange="importarDatos(this)"/></label>
       <div class="estado-badge">Morelos</div>
@@ -2151,7 +2151,12 @@ function generarMensaje(){
   document.getElementById('copy-btn').textContent='📋 Copiar mensaje';
   document.getElementById('result-card').scrollIntoView({behavior:'smooth',block:'nearest'});
   // Guardar datos para seguimiento
-  window._lastCot={cliente,nombreTramite,total:desgloseData.total,empresa,mensaje};
+  // Obtener marca y modelo del formulario activo
+  const marcaMap={alta:'alta-veh-marca',placas:'pla-veh-marca',baja:'baja-veh-marca',cambio:'cam-marca'};
+  const modeloMap={alta:'alta-veh-modelo',placas:'pla-veh-modelo',baja:'baja-veh-modelo',cambio:'cam-modelo'};
+  const marcaVal=tramite&&marcaMap[tramite]?document.getElementById(marcaMap[tramite])?.value?.trim():'';
+  const modeloVal=tramite&&modeloMap[tramite]?document.getElementById(modeloMap[tramite])?.value?.trim():'';
+  window._lastCot={cliente,nombreTramite,total:desgloseData.total,empresa,mensaje,marca:marcaVal,modelo:modeloVal};
   // Mostrar boton de registrar en seguimiento
   const sbtn=document.getElementById('send-cot-btn');
   if(sbtn){sbtn.style.display='block';sbtn.textContent='✅ Registrar cotización en seguimiento';sbtn.style.background='';}
@@ -2195,6 +2200,8 @@ function enviarASeguimiento(){
     estado:'pendiente',
     ts:Date.now(),
     notas:'',
+    marca:c.marca||'',
+    modelo:c.modelo||'',
   };
   cotizaciones.unshift(nueva);
   saveAll();
@@ -2345,6 +2352,13 @@ function openCotDetail(id){
   const c=cotizaciones.find(x=>x.id===id);if(!c)return;
   document.getElementById('mcd-title').textContent=c.cliente;
   document.getElementById('mcd-cliente').textContent=c.cliente;
+  var mcdVeh=document.getElementById('mcd-vehiculo-wrap');
+  var mcdVehVal=document.getElementById('mcd-vehiculo');
+  if(mcdVeh&&mcdVehVal){
+    var vehStr=[c.marca,c.modelo].filter(Boolean).join(' ');
+    mcdVeh.style.display=vehStr?'block':'none';
+    mcdVehVal.textContent=vehStr||'';
+  }
   document.getElementById('mcd-tramite').textContent=c.tramite;
   document.getElementById('mcd-total').textContent=mxn(c.total);
   document.getElementById('mcd-fecha').textContent=fD(c.ts);
