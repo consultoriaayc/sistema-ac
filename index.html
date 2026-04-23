@@ -410,7 +410,7 @@ async function onCambioEstado(){
   cotHonorarios=hr.data||[];
   cotConceptos=cp.data||[];
   console.log('Estado cargado: '+cotDerechos.length+' derechos, '+cotHonorarios.length+' honorarios, '+cotConceptos.length+' conceptos');
-  poblarSelects();
+  if(typeof clientes!=='undefined'&&clientes.length)poblarSelects();
   // Recalcular si hay tramite activo
   if(tramite)recalcularTramiteActivo();
 }
@@ -490,13 +490,49 @@ function getEmpresaIdCliente(){
   return cli?parseInt(cli.id)||null:null;
 }
 
+
+function iniciarRealtime(){
+  supa.channel('cotizaciones-changes')
+    .on('postgres_changes',{event:'*',schema:'public',table:'cotizaciones'},function(payload){
+      var r=payload.new;if(!r||!r.id)return;
+      if(payload.eventType==='DELETE'){cotizaciones=cotizaciones.filter(function(c){return c.id!==payload.old.id;});}
+      else{var cot={id:r.id,folio:r.folio,cliente:r.cliente,tramite:r.tramite,total:r.total,empresa:r.empresa,estado:r.estado,tipo:r.tipo,notas:r.notas,seg1:r.seg1,seg2:r.seg2,seg3:r.seg3,seg1fecha:r.seg1fecha,seg2fecha:r.seg2fecha,seg3fecha:r.seg3fecha,ts:r.ts};var idx=cotizaciones.findIndex(function(c){return c.id===r.id;});if(idx>=0)cotizaciones[idx]=cot;else cotizaciones.unshift(cot);}
+      if(document.getElementById('view-seguimiento').style.display!=='none')renderSeguimiento();updateBadges();
+    }).subscribe();
+  supa.channel('tramites-changes')
+    .on('postgres_changes',{event:'*',schema:'public',table:'tramites'},function(payload){
+      var r=payload.new;if(!r||!r.id)return;
+      if(payload.eventType==='DELETE'){tramites=tramites.filter(function(t){return t.id!==payload.old.id;});}
+      else{var tram={id:r.id,owner:r.owner,vehicle:r.vehicle,client:r.client,type:r.type,notes:r.notes,stage:r.stage,stageTs:r.stage_ts,createdTs:r.created_ts,cotId:r.cot_id,depositos:r.depositos||[],gastos:r.gastos||[],depositoPendiente:r.deposito_pendiente,clienteId:r.cliente_id,vehiculoId:r.vehiculo_id,propietario:r.propietario||'',entidad:r.entidad||''};var idx=tramites.findIndex(function(t){return t.id===r.id;});if(idx>=0)tramites[idx]=tram;else tramites.unshift(tram);}
+      if(document.getElementById('view-tablero').style.display!=='none')renderBoard();updateBadges();
+    }).subscribe();
+  supa.channel('clientes-changes')
+    .on('postgres_changes',{event:'*',schema:'public',table:'clientes'},function(payload){
+      var r=payload.new;if(!r||!r.id_cliente)return;
+      if(payload.eventType==='DELETE'){clientes=clientes.filter(function(c){return c.id!=payload.old.id_cliente;});}
+      else{var cli={id:r.id_cliente,nombre:r.nombre,telefono:r.celular||'',direccion:r.direccion||'',ts:r.ts};var idx=clientes.findIndex(function(c){return c.id==r.id_cliente;});if(idx>=0)clientes[idx]=cli;else clientes.unshift(cli);}
+      if(document.getElementById('view-clientes').style.display!=='none')renderClientes();
+    }).subscribe();
+  supa.channel('vehiculos-changes')
+    .on('postgres_changes',{event:'*',schema:'public',table:'vehiculos'},function(payload){
+      var r=payload.new;if(!r||!r.id)return;
+      if(payload.eventType==='DELETE'){vehiculos=vehiculos.filter(function(v){return v.id!==payload.old.id;});}
+      else{var entNombre=catEntidades.find(function(e){return e.id_estado===r.id_estado;});var asegNombre=catAseguradoras.find(function(a){return a.id_aseguradora===r.id_aseguradora;});var veh={id:r.id,clienteId:r.id_cliente,propietario:r.propietario||'',numeroSerie:r.numero_serie||'',fechaFactura:r.fecha_factura||'',importeFactura:r.importe_factura||0,anio:r.anio||'',marca:r.marca||'',modelo:r.modelo||'',version:r.version||'',tipo:r.tipo||'',placa:r.placa||'',entidad:entNombre?entNombre.estado:(r.entidad||''),idEstado:r.id_estado,numeroMotor:r.numero_motor||'',claveVehicular:r.clave_vehicular||'',tarjetaCirculacionVencimiento:r.tarjeta_circulacion_vencimiento||'',aseguradora:asegNombre?asegNombre.aseguradora:(r.aseguradora||''),idAseguradora:r.id_aseguradora,polizaVigencia:r.poliza_vigencia||'',verificacionVigencia:r.verificacion_vigencia||'',estatus:r.estatus||'ACTIVO',ts:r.ts};var idx=vehiculos.findIndex(function(v){return v.id===r.id;});if(idx>=0)vehiculos[idx]=veh;else vehiculos.unshift(veh);}
+      if(document.getElementById('view-vehiculos').style.display!=='none')renderVehiculos();
+    }).subscribe();
+  console.log('✅ Realtime activo — sincronizando 4 tablas');
+}
 // ── INIT ──
 supa=supabase.createClient(SUPA_URL,SUPA_KEY);
 cargarPrecios();
 cargarTiposVehiculo();
 cargarCatalogos();
 cargarEstadosOperacion();
-cloudLoad().then(function(){iniciarRealtime();});
+cloudLoad().then(function(){
+  iniciarRealtime();
+  // Poblar selects de empresa despues de cargar clientes
+  if(cotEstadoId)poblarSelects();
+});
 
 </script>
 </head>
@@ -516,7 +552,7 @@ cloudLoad().then(function(){iniciarRealtime();});
     </div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
       <div class="save-ind" id="save-ind"><div class="save-dot"></div>
-    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.11</span><span id="save-txt">guardado</span></div>
+    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.12</span><span id="save-txt">guardado</span></div>
       <button onclick="exportarDatos()" style="padding:5px 12px;background:#059669;color:white;border:none;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Exportar</button>
       <label style="padding:5px 12px;background:#1e3a5f;color:white;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Importar<input type="file" id="import-file" accept=".json" style="display:none" onchange="importarDatos(this)"/></label>
       <div class="estado-badge">Morelos</div>
@@ -4037,7 +4073,7 @@ async function onCambioEstado(){
   cotHonorarios=hr.data||[];
   cotConceptos=cp.data||[];
   console.log('Estado cargado: '+cotDerechos.length+' derechos, '+cotHonorarios.length+' honorarios, '+cotConceptos.length+' conceptos');
-  poblarSelects();
+  if(typeof clientes!=='undefined'&&clientes.length)poblarSelects();
   // Recalcular si hay tramite activo
   if(tramite)recalcularTramiteActivo();
 }
@@ -4117,13 +4153,49 @@ function getEmpresaIdCliente(){
   return cli?parseInt(cli.id)||null:null;
 }
 
+
+function iniciarRealtime(){
+  supa.channel('cotizaciones-changes')
+    .on('postgres_changes',{event:'*',schema:'public',table:'cotizaciones'},function(payload){
+      var r=payload.new;if(!r||!r.id)return;
+      if(payload.eventType==='DELETE'){cotizaciones=cotizaciones.filter(function(c){return c.id!==payload.old.id;});}
+      else{var cot={id:r.id,folio:r.folio,cliente:r.cliente,tramite:r.tramite,total:r.total,empresa:r.empresa,estado:r.estado,tipo:r.tipo,notas:r.notas,seg1:r.seg1,seg2:r.seg2,seg3:r.seg3,seg1fecha:r.seg1fecha,seg2fecha:r.seg2fecha,seg3fecha:r.seg3fecha,ts:r.ts};var idx=cotizaciones.findIndex(function(c){return c.id===r.id;});if(idx>=0)cotizaciones[idx]=cot;else cotizaciones.unshift(cot);}
+      if(document.getElementById('view-seguimiento').style.display!=='none')renderSeguimiento();updateBadges();
+    }).subscribe();
+  supa.channel('tramites-changes')
+    .on('postgres_changes',{event:'*',schema:'public',table:'tramites'},function(payload){
+      var r=payload.new;if(!r||!r.id)return;
+      if(payload.eventType==='DELETE'){tramites=tramites.filter(function(t){return t.id!==payload.old.id;});}
+      else{var tram={id:r.id,owner:r.owner,vehicle:r.vehicle,client:r.client,type:r.type,notes:r.notes,stage:r.stage,stageTs:r.stage_ts,createdTs:r.created_ts,cotId:r.cot_id,depositos:r.depositos||[],gastos:r.gastos||[],depositoPendiente:r.deposito_pendiente,clienteId:r.cliente_id,vehiculoId:r.vehiculo_id,propietario:r.propietario||'',entidad:r.entidad||''};var idx=tramites.findIndex(function(t){return t.id===r.id;});if(idx>=0)tramites[idx]=tram;else tramites.unshift(tram);}
+      if(document.getElementById('view-tablero').style.display!=='none')renderBoard();updateBadges();
+    }).subscribe();
+  supa.channel('clientes-changes')
+    .on('postgres_changes',{event:'*',schema:'public',table:'clientes'},function(payload){
+      var r=payload.new;if(!r||!r.id_cliente)return;
+      if(payload.eventType==='DELETE'){clientes=clientes.filter(function(c){return c.id!=payload.old.id_cliente;});}
+      else{var cli={id:r.id_cliente,nombre:r.nombre,telefono:r.celular||'',direccion:r.direccion||'',ts:r.ts};var idx=clientes.findIndex(function(c){return c.id==r.id_cliente;});if(idx>=0)clientes[idx]=cli;else clientes.unshift(cli);}
+      if(document.getElementById('view-clientes').style.display!=='none')renderClientes();
+    }).subscribe();
+  supa.channel('vehiculos-changes')
+    .on('postgres_changes',{event:'*',schema:'public',table:'vehiculos'},function(payload){
+      var r=payload.new;if(!r||!r.id)return;
+      if(payload.eventType==='DELETE'){vehiculos=vehiculos.filter(function(v){return v.id!==payload.old.id;});}
+      else{var entNombre=catEntidades.find(function(e){return e.id_estado===r.id_estado;});var asegNombre=catAseguradoras.find(function(a){return a.id_aseguradora===r.id_aseguradora;});var veh={id:r.id,clienteId:r.id_cliente,propietario:r.propietario||'',numeroSerie:r.numero_serie||'',fechaFactura:r.fecha_factura||'',importeFactura:r.importe_factura||0,anio:r.anio||'',marca:r.marca||'',modelo:r.modelo||'',version:r.version||'',tipo:r.tipo||'',placa:r.placa||'',entidad:entNombre?entNombre.estado:(r.entidad||''),idEstado:r.id_estado,numeroMotor:r.numero_motor||'',claveVehicular:r.clave_vehicular||'',tarjetaCirculacionVencimiento:r.tarjeta_circulacion_vencimiento||'',aseguradora:asegNombre?asegNombre.aseguradora:(r.aseguradora||''),idAseguradora:r.id_aseguradora,polizaVigencia:r.poliza_vigencia||'',verificacionVigencia:r.verificacion_vigencia||'',estatus:r.estatus||'ACTIVO',ts:r.ts};var idx=vehiculos.findIndex(function(v){return v.id===r.id;});if(idx>=0)vehiculos[idx]=veh;else vehiculos.unshift(veh);}
+      if(document.getElementById('view-vehiculos').style.display!=='none')renderVehiculos();
+    }).subscribe();
+  console.log('✅ Realtime activo — sincronizando 4 tablas');
+}
 // ── INIT ──
 supa=supabase.createClient(SUPA_URL,SUPA_KEY);
 cargarPrecios();
 cargarTiposVehiculo();
 cargarCatalogos();
 cargarEstadosOperacion();
-cloudLoad().then(function(){iniciarRealtime();});
+cloudLoad().then(function(){
+  iniciarRealtime();
+  // Poblar selects de empresa despues de cargar clientes
+  if(cotEstadoId)poblarSelects();
+});
 </script>
 </body>
 </html>
