@@ -556,7 +556,7 @@ supa=supabase.createClient(SUPA_URL,SUPA_KEY);
     </div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
       <div class="save-ind" id="save-ind"><div class="save-dot"></div>
-    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.30</span><span id="save-txt">guardado</span></div>
+    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.31</span><span id="save-txt">guardado</span></div>
       <button onclick="exportarDatos()" style="padding:5px 12px;background:#059669;color:white;border:none;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Exportar</button>
       <label style="padding:5px 12px;background:#1e3a5f;color:white;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Importar<input type="file" id="import-file" accept=".json" style="display:none" onchange="importarDatos(this)"/></label>
       <div class="estado-badge">Morelos</div>
@@ -2037,9 +2037,6 @@ function calcRefrendo(){
   const adeudoOn=document.getElementById('ref-adeudo-chk').checked;
   const adeudoMonto=parseFloat(document.getElementById('ref-adeudo-monto').value)||0;
   const idEmpresa=getEmpresaIdCliente();
-  const tipoPlacaSel=document.getElementById('ref-tipo-placa');
-  const tipoPlacaNombre=tipoPlacaSel&&tipoPlacaSel.selectedIndex>0?tipoPlacaSel.options[tipoPlacaSel.selectedIndex].text:'';
-  const idTipoPlaca=tipoPlacaSel?parseInt(tipoPlacaSel.value)||null:null;
   const items=[];let total=0;let baseIva=0;
   const HON_REF=getHonorarioImporte(4,idEmpresa)||490;
   const totalVeh=refVehiculos.length||1;
@@ -2061,7 +2058,7 @@ function calcRefrendo(){
     items.push({label:'Agrega vehículos para calcular',val:0});
   }
   if(adeudoOn&&adeudoMonto>0){items.push({label:'Recargos / adeudos verificados',val:adeudoMonto});total+=adeudoMonto;}
-  const hon=HON_REF*(refVehiculos.length||autos+motos||1);
+  const hon=HON_REF*(refVehiculos.length||1);
   items.push({label:'Honorarios',val:hon});total+=hon;baseIva+=hon;
   if(factura){const iva=Math.round(baseIva*0.16*100)/100;items.push({label:'IVA 16%',val:iva,esIva:true});total+=iva;}
   renderDesglose('ref-desglose',items,total,empresa);
