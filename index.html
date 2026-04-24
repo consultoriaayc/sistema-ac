@@ -415,18 +415,17 @@ async function onCambioEstado(){
   if(tramite)recalcularTramiteActivo();
 }
 
+
 function getDerechoImporte(concepto, idTipoPlaca){
   var id=idTipoPlaca?parseInt(idTipoPlaca):null;
   var conceptoBase=concepto.split(' ')[0];
   var dr;
   if(id){
-    // Buscar por primera palabra del concepto + id_tipo_placa exacto
     dr=cotDerechos.find(function(d){
       return d.concepto.startsWith(conceptoBase) && parseInt(d.id_tipo_placa)===id;
     });
   }
   if(!dr){
-    // Sin tipo de placa
     dr=cotDerechos.find(function(d){
       return d.concepto===concepto && !d.id_tipo_placa;
     });
@@ -557,7 +556,7 @@ supa=supabase.createClient(SUPA_URL,SUPA_KEY);
     </div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
       <div class="save-ind" id="save-ind"><div class="save-dot"></div>
-    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.29</span><span id="save-txt">guardado</span></div>
+    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.30</span><span id="save-txt">guardado</span></div>
       <button onclick="exportarDatos()" style="padding:5px 12px;background:#059669;color:white;border:none;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Exportar</button>
       <label style="padding:5px 12px;background:#1e3a5f;color:white;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Importar<input type="file" id="import-file" accept=".json" style="display:none" onchange="importarDatos(this)"/></label>
       <div class="estado-badge">Morelos</div>
