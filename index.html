@@ -522,15 +522,15 @@ function iniciarRealtime(){
 }
 // ── INIT ──
 supa=supabase.createClient(SUPA_URL,SUPA_KEY);
-cargarPrecios();
-cargarTiposVehiculo();
-cargarCatalogos();
-cargarEstadosOperacion();
-cloudLoad().then(function(){
+// Cargar todo en secuencia correcta
+(async function(){
+  await cargarCatalogos(); // entidades, aseguradoras, marcas, tipos placa, empresas
+  await cargarEstadosOperacion(); // estados de operacion — puebla selector de estado
+  await cloudLoad(); // datos principales
   iniciarRealtime();
-  // Poblar selects de empresa despues de cargar clientes
-  if(cotEstadoId)poblarSelects();
-});
+  poblarSelectsTipo(); // tipo de placa en formularios
+  if(cotEstadoId)poblarSelects(); // empresas en cotizador
+})();
 
 </script>
 </head>
@@ -550,7 +550,7 @@ cloudLoad().then(function(){
     </div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
       <div class="save-ind" id="save-ind"><div class="save-dot"></div>
-    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.22</span><span id="save-txt">guardado</span></div>
+    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.25</span><span id="save-txt">guardado</span></div>
       <button onclick="exportarDatos()" style="padding:5px 12px;background:#059669;color:white;border:none;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Exportar</button>
       <label style="padding:5px 12px;background:#1e3a5f;color:white;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Importar<input type="file" id="import-file" accept=".json" style="display:none" onchange="importarDatos(this)"/></label>
       <div class="estado-badge">Morelos</div>
@@ -1751,7 +1751,7 @@ function poblarSelectsCatalogos(){
   // Tipos de placa
   var tipoOpts='<option value="">Selecciona tipo...</option>'
     +catTiposPlaca.map(function(t){return '<option value="'+t.id_tipo+'">'+t.tipo+'</option>';}).join('');
-  ['veh-tipo','alta-veh-tipo','pla-veh-tipo','baja-veh-tipo'].forEach(function(id){
+  ['veh-tipo','alta-veh-tipo','pla-veh-tipo','baja-veh-tipo','ref-tipo-placa','cam-tipo-placa'].forEach(function(id){
     var el=document.getElementById(id);
     if(el){var cur=el.value;el.innerHTML=tipoOpts;if(cur)el.value=cur;}
   });
@@ -1791,14 +1791,15 @@ async function cargarTiposVehiculo(){
 }
 
 function poblarSelectsTipo(){
-  var ids=['alta-veh-tipo','pla-veh-tipo','baja-veh-tipo'];
+  var ids=['alta-veh-tipo','pla-veh-tipo','baja-veh-tipo','ref-tipo-placa','cam-tipo-placa'];
+  var fuente=catTiposPlaca.length?catTiposPlaca:TIPOS_VEHICULO.map(function(t){return{id_tipo:t.tipo,tipo:t.tipo};});
   ids.forEach(function(id){
     var sel=document.getElementById(id);
     if(!sel)return;
     var cur=sel.value;
     sel.innerHTML='<option value="">Selecciona tipo...</option>'
-      +TIPOS_VEHICULO.map(function(t){
-        return '<option value="'+t.tipo+'" data-derechos="'+t.derechos+'"'+(t.tipo===cur?' selected':'')+'>'+t.tipo+'</option>';
+      +fuente.map(function(t){
+        return '<option value="'+t.id_tipo+'"'+(t.id_tipo==cur?' selected':'')+'>'+t.tipo+'</option>';
       }).join('');
     if(cur)sel.value=cur;
   });
@@ -2029,38 +2030,54 @@ function calcRefrendo(){
   const factura=document.getElementById('ref-factura-chk').checked;
   const adeudoOn=document.getElementById('ref-adeudo-chk').checked;
   const adeudoMonto=parseFloat(document.getElementById('ref-adeudo-monto').value)||0;
-  const idCliente=getEmpresaIdCliente();
+  const idEmpresa=getEmpresaIdCliente();
+  const tipoPlacaSel=document.getElementById('ref-tipo-placa');
+  const tipoPlacaNombre=tipoPlacaSel&&tipoPlacaSel.selectedIndex>0?tipoPlacaSel.options[tipoPlacaSel.selectedIndex].text:'';
+  const idTipoPlaca=tipoPlacaSel?parseInt(tipoPlacaSel.value)||null:null;
   const items=[];let total=0;let baseIva=0;
-  const autos=refVehiculos.filter(function(v){return v.tipo==='auto';}).length;
-  const motos=refVehiculos.filter(function(v){return v.tipo==='moto';}).length;
-  const refAutoImp=getDerechoImporte('Refrendo AUTO',null)||880;
-  const refMotoImp=getDerechoImporte('Refrendo MOTO',null)||469;
-  const HON_REF=getHonorarioImporte(4,idCliente)||490; // id 4 = Refrendo
-  if(autos>0){items.push({label:'Refrendo autos ('+autos+' x $'+refAutoImp+')',val:autos*refAutoImp});total+=autos*refAutoImp;}
-  if(motos>0){items.push({label:'Refrendo motos ('+motos+' x $'+refMotoImp+')',val:motos*refMotoImp});total+=motos*refMotoImp;}
-  if(adeudoOn&&adeudoMonto>0){items.push({label:'Recargos / adeudos verificados',val:adeudoMonto});total+=adeudoMonto;}
-  const totalVeh=autos+motos;
-  if(totalVeh>0){
-    const hon=HON_REF*totalVeh;
-    items.push({label:'Honorarios ('+totalVeh+' x $'+HON_REF+')',val:hon});total+=hon;baseIva+=hon;
-    if(factura){const iva=Math.round(baseIva*0.16*100)/100;items.push({label:'IVA 16%',val:iva,esIva:true});total+=iva;}
+  const HON_REF=getHonorarioImporte(4,idEmpresa)||490;
+  const totalVeh=refVehiculos.length||1;
+
+  if(tipoPlacaNombre){
+    var refConcepto='Refrendo '+tipoPlacaNombre.charAt(0).toUpperCase()+tipoPlacaNombre.slice(1).toLowerCase();
+    var refImp=getDerechoImporte(refConcepto,idTipoPlaca)||880;
+    items.push({label:'Refrendo '+tipoPlacaNombre+' ('+totalVeh+' x $'+refImp+')',val:totalVeh*refImp});
+    total+=totalVeh*refImp;
+  } else {
+    const autos=refVehiculos.filter(function(v){return v.tipo==='auto';}).length;
+    const motos=refVehiculos.filter(function(v){return v.tipo==='moto';}).length;
+    const refAutoImp=getDerechoImporte('Refrendo Auto',null)||880;
+    const refMotoImp=getDerechoImporte('Refrendo Moto',null)||469;
+    if(autos>0){items.push({label:'Refrendo autos ('+autos+' x $'+refAutoImp+')',val:autos*refAutoImp});total+=autos*refAutoImp;}
+    if(motos>0){items.push({label:'Refrendo motos ('+motos+' x $'+refMotoImp+')',val:motos*refMotoImp});total+=motos*refMotoImp;}
   }
+  if(adeudoOn&&adeudoMonto>0){items.push({label:'Recargos / adeudos verificados',val:adeudoMonto});total+=adeudoMonto;}
+  const hon=HON_REF*(refVehiculos.length||autos+motos||1);
+  items.push({label:'Honorarios',val:hon});total+=hon;baseIva+=hon;
+  if(factura){const iva=Math.round(baseIva*0.16*100)/100;items.push({label:'IVA 16%',val:iva,esIva:true});total+=iva;}
   renderDesglose('ref-desglose',items,total,empresa);
 }
 
 function calcCambio(){
   if(!cotEstadoId){alert('Selecciona el estado primero.');return;}
   const empresa=document.getElementById('cam-empresa')?.value||'publico';
-  const idCliente=getEmpresaIdCliente();
+  const idEmpresa=getEmpresaIdCliente();
   const valorLibro=parseFloat(document.getElementById('cam-valor').value)||0;
   const pago2026=document.getElementById('cam-2026-chk').checked;
   const factura=document.getElementById('cam-factura-chk').checked;
   const adeudoOn=document.getElementById('cam-adeudo-chk').checked;
   const adeudoMonto=parseFloat(document.getElementById('cam-adeudo-monto').value)||0;
-  const HON_CAM=getHonorarioImporte(6,idCliente)||2500;
+  const HON_CAM=getHonorarioImporte(6,idEmpresa)||2500;
+  const tipoPlacaSel=document.getElementById('cam-tipo-placa');
+  const tipoPlacaNombre=tipoPlacaSel?tipoPlacaSel.options[tipoPlacaSel.selectedIndex]?.text||'':'';
+  const idTipoPlaca=tipoPlacaSel?parseInt(tipoPlacaSel.value)||null:null;
   const items=[];let total=0;let baseIva=0;
+
   if(!pago2026){
-    items.push({label:'Refrendo 2026',val:880});total+=880;
+    // Refrendo 2026 segun tipo de placa
+    var refConcepto=tipoPlacaNombre?'Refrendo '+tipoPlacaNombre.charAt(0)+tipoPlacaNombre.slice(1).toLowerCase():'Refrendo Auto';
+    var refImp=getDerechoImporte(refConcepto,idTipoPlaca)||880;
+    items.push({label:'Refrendo 2026 ('+tipoPlacaNombre+')',val:refImp});total+=refImp;
   } else {
     const reimp=getDerechoImporte('Reimpresión tarjeta circulación',null)||453;
     items.push({label:'Reimpresion de tarjeta de circulacion',val:reimp});total+=reimp;
@@ -2086,8 +2103,8 @@ function calcPlacas(){
   const adeudoMonto=parseFloat(document.getElementById('pla-adeudo-monto').value)||0;
   const actaOn=document.getElementById('pla-acta-chk')?.checked||false;
   const HON_PLA=getHonorarioImporte(7,idCliente)||2500;
-  const derAlt=getDerechoImporte('Derechos de alta',idTipoPlaca)||1290;
-  const derBaj=getDerechoImporte('Derechos de baja',null)||235;
+  const derAlt=getDerechoImporte('Reposición de placa',idTipoPlaca)||getDerechoImporte('Derechos de alta',idTipoPlaca)||1290;
+  const derBaj=getDerechoImporte('Baja',null)||253;
   const items=[];let total=0;let baseIva=0;
   items.push({label:'Derechos de alta',val:derAlt});total+=derAlt;
   items.push({label:'Derechos de baja',val:derBaj});total+=derBaj;
@@ -4216,15 +4233,15 @@ function iniciarRealtime(){
 }
 // ── INIT ──
 supa=supabase.createClient(SUPA_URL,SUPA_KEY);
-cargarPrecios();
-cargarTiposVehiculo();
-cargarCatalogos();
-cargarEstadosOperacion();
-cloudLoad().then(function(){
+// Cargar todo en secuencia correcta
+(async function(){
+  await cargarCatalogos(); // entidades, aseguradoras, marcas, tipos placa, empresas
+  await cargarEstadosOperacion(); // estados de operacion — puebla selector de estado
+  await cloudLoad(); // datos principales
   iniciarRealtime();
-  // Poblar selects de empresa despues de cargar clientes
-  if(cotEstadoId)poblarSelects();
-});
+  poblarSelectsTipo(); // tipo de placa en formularios
+  if(cotEstadoId)poblarSelects(); // empresas en cotizador
+})();
 </script>
 </body>
 </html>
