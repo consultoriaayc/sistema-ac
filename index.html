@@ -416,12 +416,16 @@ async function onCambioEstado(){
 }
 
 function getDerechoImporte(concepto, idTipoPlaca){
-  // Buscar en cotDerechos por concepto y tipo de placa
+  var id=idTipoPlaca?parseInt(idTipoPlaca):null;
+  // Buscar por concepto y tipo de placa (comparacion numerica)
   var dr=cotDerechos.find(function(d){
-    return d.concepto===concepto && (idTipoPlaca?d.id_tipo_placa===idTipoPlaca:!d.id_tipo_placa);
+    var match=d.concepto===concepto;
+    if(id)match=match&&parseInt(d.id_tipo_placa)===id;
+    else match=match&&!d.id_tipo_placa;
+    return match;
   });
-  if(!dr&&idTipoPlaca){
-    // Buscar sin tipo de placa
+  // Si no encontro con tipo, buscar solo por concepto
+  if(!dr&&id){
     dr=cotDerechos.find(function(d){return d.concepto===concepto;});
   }
   return dr?parseFloat(dr.importe)||0:0;
@@ -550,7 +554,7 @@ supa=supabase.createClient(SUPA_URL,SUPA_KEY);
     </div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
       <div class="save-ind" id="save-ind"><div class="save-dot"></div>
-    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.26</span><span id="save-txt">guardado</span></div>
+    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.27</span><span id="save-txt">guardado</span></div>
       <button onclick="exportarDatos()" style="padding:5px 12px;background:#059669;color:white;border:none;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Exportar</button>
       <label style="padding:5px 12px;background:#1e3a5f;color:white;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Importar<input type="file" id="import-file" accept=".json" style="display:none" onchange="importarDatos(this)"/></label>
       <div class="estado-badge">Morelos</div>
@@ -4133,12 +4137,16 @@ async function onCambioEstado(){
 }
 
 function getDerechoImporte(concepto, idTipoPlaca){
-  // Buscar en cotDerechos por concepto y tipo de placa
+  var id=idTipoPlaca?parseInt(idTipoPlaca):null;
+  // Buscar por concepto y tipo de placa (comparacion numerica)
   var dr=cotDerechos.find(function(d){
-    return d.concepto===concepto && (idTipoPlaca?d.id_tipo_placa===idTipoPlaca:!d.id_tipo_placa);
+    var match=d.concepto===concepto;
+    if(id)match=match&&parseInt(d.id_tipo_placa)===id;
+    else match=match&&!d.id_tipo_placa;
+    return match;
   });
-  if(!dr&&idTipoPlaca){
-    // Buscar sin tipo de placa
+  // Si no encontro con tipo, buscar solo por concepto
+  if(!dr&&id){
     dr=cotDerechos.find(function(d){return d.concepto===concepto;});
   }
   return dr?parseFloat(dr.importe)||0:0;
