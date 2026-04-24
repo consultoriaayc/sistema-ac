@@ -550,7 +550,7 @@ supa=supabase.createClient(SUPA_URL,SUPA_KEY);
     </div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
       <div class="save-ind" id="save-ind"><div class="save-dot"></div>
-    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.25</span><span id="save-txt">guardado</span></div>
+    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.26</span><span id="save-txt">guardado</span></div>
       <button onclick="exportarDatos()" style="padding:5px 12px;background:#059669;color:white;border:none;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Exportar</button>
       <label style="padding:5px 12px;background:#1e3a5f;color:white;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Importar<input type="file" id="import-file" accept=".json" style="display:none" onchange="importarDatos(this)"/></label>
       <div class="estado-badge">Morelos</div>
@@ -764,8 +764,7 @@ supa=supabase.createClient(SUPA_URL,SUPA_KEY);
         <div class="field" style="margin:0;">
           <label>Tipo</label>
           <select id="ref-veh-tipo" style="padding:11px 8px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-family:Inter,sans-serif;font-size:13px;width:100%;">
-            <option value="auto">🚗 Auto</option>
-            <option value="moto">🏍️ Moto</option>
+            <option value="">Tipo...</option>
           </select>
         </div>
       </div>
@@ -783,6 +782,7 @@ supa=supabase.createClient(SUPA_URL,SUPA_KEY);
       <div class="card-title">Datos del vehículo</div>
       <div class="field"><label>Nombre del cliente</label><input type="text" id="cam-cliente" placeholder="Ej. Carlos Ruiz"/></div>
       <div class="field"><label>Empresa / tipo de cliente</label><select id="cam-empresa" onchange="calcCambio()"></select></div>
+      <div class="field"><label>Tipo de placa</label><select id="cam-tipo-placa" onchange="calcCambio()"><option value="">Selecciona tipo...</option></select></div>
       <div class="g2">
         <div class="field"><label>Año del vehículo</label><input type="number" id="cam-anio" placeholder="Ej. 2020" min="1980" max="2026" oninput="calcCambio()"/></div>
         <div class="field"><label>Marca</label><input type="text" id="cam-marca" placeholder="Ej. Toyota"/></div>
@@ -1791,7 +1791,7 @@ async function cargarTiposVehiculo(){
 }
 
 function poblarSelectsTipo(){
-  var ids=['alta-veh-tipo','pla-veh-tipo','baja-veh-tipo','ref-tipo-placa','cam-tipo-placa'];
+  var ids=['alta-veh-tipo','pla-veh-tipo','baja-veh-tipo','ref-tipo-placa','cam-tipo-placa','ref-veh-tipo'];
   var fuente=catTiposPlaca.length?catTiposPlaca:TIPOS_VEHICULO.map(function(t){return{id_tipo:t.tipo,tipo:t.tipo};});
   ids.forEach(function(id){
     var sel=document.getElementById(id);
@@ -2038,18 +2038,21 @@ function calcRefrendo(){
   const HON_REF=getHonorarioImporte(4,idEmpresa)||490;
   const totalVeh=refVehiculos.length||1;
 
-  if(tipoPlacaNombre){
-    var refConcepto='Refrendo '+tipoPlacaNombre.charAt(0).toUpperCase()+tipoPlacaNombre.slice(1).toLowerCase();
-    var refImp=getDerechoImporte(refConcepto,idTipoPlaca)||880;
-    items.push({label:'Refrendo '+tipoPlacaNombre+' ('+totalVeh+' x $'+refImp+')',val:totalVeh*refImp});
-    total+=totalVeh*refImp;
-  } else {
-    const autos=refVehiculos.filter(function(v){return v.tipo==='auto';}).length;
-    const motos=refVehiculos.filter(function(v){return v.tipo==='moto';}).length;
-    const refAutoImp=getDerechoImporte('Refrendo Auto',null)||880;
-    const refMotoImp=getDerechoImporte('Refrendo Moto',null)||469;
-    if(autos>0){items.push({label:'Refrendo autos ('+autos+' x $'+refAutoImp+')',val:autos*refAutoImp});total+=autos*refAutoImp;}
-    if(motos>0){items.push({label:'Refrendo motos ('+motos+' x $'+refMotoImp+')',val:motos*refMotoImp});total+=motos*refMotoImp;}
+  // Calcular refrendo por tipo de cada vehiculo
+  var refPorTipo={};
+  refVehiculos.forEach(function(v){
+    var concepto='Refrendo '+v.tipo.charAt(0).toUpperCase()+v.tipo.slice(1).toLowerCase();
+    var imp=getDerechoImporte(concepto,v.idTipo)||880;
+    if(!refPorTipo[v.tipo])refPorTipo[v.tipo]={count:0,imp:imp,nombre:v.tipo};
+    refPorTipo[v.tipo].count++;
+  });
+  Object.values(refPorTipo).forEach(function(rt){
+    items.push({label:'Refrendo '+rt.nombre+' ('+rt.count+' x $'+rt.imp+')',val:rt.count*rt.imp});
+    total+=rt.count*rt.imp;
+  });
+  if(!refVehiculos.length){
+    // Sin vehiculos agregados - mostrar placeholder
+    items.push({label:'Agrega vehículos para calcular',val:0});
   }
   if(adeudoOn&&adeudoMonto>0){items.push({label:'Recargos / adeudos verificados',val:adeudoMonto});total+=adeudoMonto;}
   const hon=HON_REF*(refVehiculos.length||autos+motos||1);
@@ -3520,9 +3523,12 @@ function agregarVehRefrendo(){
   var prop=document.getElementById('ref-veh-prop').value.trim();
   var marca=document.getElementById('ref-veh-marca').value.trim();
   var modelo=document.getElementById('ref-veh-modelo').value.trim();
-  var tipo=document.getElementById('ref-veh-tipo').value;
+  var tipoSel=document.getElementById('ref-veh-tipo');
+  var tipoId=tipoSel?parseInt(tipoSel.value)||null:null;
+  var tipoNombre=tipoSel&&tipoSel.selectedIndex>0?tipoSel.options[tipoSel.selectedIndex].text:'AUTO';
   if(!prop&&!marca){alert('Ingresa al menos el propietario o la marca.');return;}
-  refVehiculos.push({prop:prop,marca:marca,modelo:modelo,tipo:tipo});
+  if(!tipoId){alert('Selecciona el tipo de placa.');return;}
+  refVehiculos.push({prop:prop,marca:marca,modelo:modelo,tipo:tipoNombre,idTipo:tipoId});
   document.getElementById('ref-veh-prop').value='';
   document.getElementById('ref-veh-marca').value='';
   document.getElementById('ref-veh-modelo').value='';
@@ -3542,7 +3548,7 @@ function renderListaRefVeh(){
   if(!refVehiculos.length){el.innerHTML='';return;}
   el.innerHTML=refVehiculos.map(function(v,i){
     return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--accent-light);border:1px solid var(--accent);border-radius:8px;margin-bottom:6px;font-size:13px;">'
-      +'<span>'+(v.tipo==='auto'?'🚗':'🏍️')+' <strong>'+v.prop+'</strong> — '+v.marca+' '+v.modelo+'</span>'
+      +'<span>🚗 <strong>'+v.prop+'</strong> — '+v.marca+' '+v.modelo+' ('+v.tipo+')</span>'
       +'<button onclick="eliminarVehRef('+i+')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:14px;padding:0 4px;">✕</button>'
       +'</div>';
   }).join('');
