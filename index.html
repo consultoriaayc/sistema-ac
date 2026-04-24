@@ -550,7 +550,7 @@ cloudLoad().then(function(){
     </div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
       <div class="save-ind" id="save-ind"><div class="save-dot"></div>
-    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.19</span><span id="save-txt">guardado</span></div>
+    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.20</span><span id="save-txt">guardado</span></div>
       <button onclick="exportarDatos()" style="padding:5px 12px;background:#059669;color:white;border:none;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Exportar</button>
       <label style="padding:5px 12px;background:#1e3a5f;color:white;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Importar<input type="file" id="import-file" accept=".json" style="display:none" onchange="importarDatos(this)"/></label>
       <div class="estado-badge">Morelos</div>
@@ -1312,6 +1312,7 @@ cloudLoad().then(function(){
   <div class="modal">
     <h2 id="mcd-title">Detalle de cotización</h2>
     <div class="detail-lbl">Cliente</div><div class="detail-val" id="mcd-cliente"></div>
+    <div id="mcd-vehiculo-wrap" style="display:none;"><div class="detail-lbl">Vehículo</div><div class="detail-val" id="mcd-vehiculo"></div></div>
     <div class="detail-lbl">Trámite</div><div class="detail-val" id="mcd-tramite"></div>
     <div class="detail-lbl">Total cotizado</div><div class="detail-val" id="mcd-total" style="font-size:18px;font-weight:700;color:var(--brand-blue);"></div>
     <div class="detail-lbl">Fecha</div><div class="detail-val" id="mcd-fecha"></div>
