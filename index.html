@@ -550,7 +550,7 @@ cloudLoad().then(function(){
     </div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
       <div class="save-ind" id="save-ind"><div class="save-dot"></div>
-    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.21</span><span id="save-txt">guardado</span></div>
+    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.22</span><span id="save-txt">guardado</span></div>
       <button onclick="exportarDatos()" style="padding:5px 12px;background:#059669;color:white;border:none;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Exportar</button>
       <label style="padding:5px 12px;background:#1e3a5f;color:white;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Importar<input type="file" id="import-file" accept=".json" style="display:none" onchange="importarDatos(this)"/></label>
       <div class="estado-badge">Morelos</div>
@@ -2190,7 +2190,7 @@ function generarFolio(){
   return prefix+String(max+1).padStart(3,'0');
 }
 
-function enviarASeguimiento(){
+async function enviarASeguimiento(){
   if(!window._lastCot){mostrarError('Genera primero la cotización.');return;}
   const c=window._lastCot;
   const nueva={
@@ -2207,6 +2207,12 @@ function enviarASeguimiento(){
     modelo:c.modelo||'',
   };
   cotizaciones.unshift(nueva);
+  // Guardar directamente en Supabase con marca y modelo
+  await supa.from('cotizaciones').insert([{
+    id:nueva.id,folio:nueva.folio,cliente:nueva.cliente,tramite:nueva.tramite,
+    total:nueva.total,empresa:nueva.empresa,estado:nueva.estado,
+    ts:nueva.ts,notas:nueva.notas,marca:nueva.marca||null,modelo:nueva.modelo||null
+  }]);
   saveAll();
   // Feedback visual
   const btn=document.getElementById('send-cot-btn');
