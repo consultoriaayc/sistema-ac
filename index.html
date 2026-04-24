@@ -550,7 +550,7 @@ cloudLoad().then(function(){
     </div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
       <div class="save-ind" id="save-ind"><div class="save-dot"></div>
-    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.20</span><span id="save-txt">guardado</span></div>
+    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.21</span><span id="save-txt">guardado</span></div>
       <button onclick="exportarDatos()" style="padding:5px 12px;background:#059669;color:white;border:none;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Exportar</button>
       <label style="padding:5px 12px;background:#1e3a5f;color:white;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Importar<input type="file" id="import-file" accept=".json" style="display:none" onchange="importarDatos(this)"/></label>
       <div class="estado-badge">Morelos</div>
@@ -1573,7 +1573,8 @@ async function cloudLoad(){
       id:r.id,folio:r.folio,cliente:r.cliente,tramite:r.tramite,
       total:r.total,empresa:r.empresa,estado:r.estado,tipo:r.tipo,
       notas:r.notas,seg1:r.seg1,seg2:r.seg2,seg3:r.seg3,
-      seg1fecha:r.seg1fecha,seg2fecha:r.seg2fecha,seg3fecha:r.seg3fecha,ts:r.ts
+      seg1fecha:r.seg1fecha,seg2fecha:r.seg2fecha,seg3fecha:r.seg3fecha,
+      marca:r.marca||'',modelo:r.modelo||'',ts:r.ts
     };});
     ingresos=ig.map(function(r){return{
       id:r.id,cliente:r.cliente,tramite:r.tramite,total:r.total,
