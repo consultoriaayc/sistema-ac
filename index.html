@@ -539,7 +539,7 @@ supa=supabase.createClient(SUPA_URL,SUPA_KEY);
     </div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
       <div class="save-ind" id="save-ind"><div class="save-dot"></div>
-    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.33</span><span id="save-txt">guardado</span></div>
+    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.34</span><span id="save-txt">guardado</span></div>
       <button onclick="exportarDatos()" style="padding:5px 12px;background:#059669;color:white;border:none;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Exportar</button>
       <label style="padding:5px 12px;background:#1e3a5f;color:white;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Importar<input type="file" id="import-file" accept=".json" style="display:none" onchange="importarDatos(this)"/></label>
       <div class="estado-badge">Morelos</div>
@@ -2319,7 +2319,9 @@ function renderSeguimiento(){
   // Ordenar: pendientes primero, luego aceptadas, convertidas, perdidas
   filtered=filtered.slice().sort(function(a,b){
     const orden={pendiente:0,aceptada:1,convertida:2,perdida:3};
-    return (orden[a.estado]||0)-(orden[b.estado]||0);
+    var estadoDiff=(orden[a.estado]||0)-(orden[b.estado]||0);
+    if(estadoDiff!==0)return estadoDiff;
+    return (b.ts||0)-(a.ts||0); // mas reciente primero dentro del mismo estado
   });
   const pend=cotizaciones.filter(c=>c.estado==='pendiente').length;
   const acept=cotizaciones.filter(c=>c.estado==='aceptada').length;
