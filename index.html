@@ -1908,8 +1908,8 @@ function renderDesglose(containerId,items,total,empresa){
   if(tramiteVal){html+='<div class="des-row" style="background:var(--accent-light);"><span class="des-label" style="color:var(--accent-text);font-weight:700;">Tramite</span><span class="des-val" style="color:var(--accent-text);">'+tramiteVal+'</span></div>';}
   // Vehiculo: tipo, marca, modelo
   var tipoMap={alta:'alta-veh-tipo',placas:'pla-veh-tipo',baja:'baja-veh-tipo',cambio:null,refrendo:null,verif:null,permiso:null};
-  var marcaMap={alta:'alta-veh-marca',placas:'pla-veh-marca',baja:'baja-veh-marca',cambio:'cam-marca',refrendo:null,verif:null,permiso:null};
-  var modeloMap={alta:'alta-veh-modelo',placas:'pla-veh-modelo',baja:'baja-veh-modelo',cambio:'cam-modelo',refrendo:null,verif:null,permiso:null};
+  var marcaMap={alta:'alta-veh-marca',placas:'pla-veh-marca',baja:'baja-veh-marca',cambio:'cam-marca',refrendo:'ref-veh-marca',seguros:'seg-marca',verif:null,permiso:null};
+  var modeloMap={alta:'alta-veh-modelo',placas:'pla-veh-modelo',baja:'baja-veh-modelo',cambio:'cam-modelo',refrendo:'ref-veh-modelo',seguros:'seg-modelo',verif:null,permiso:null};
   var tipoVeh=tramite&&tipoMap[tramite]?document.getElementById(tipoMap[tramite])?.value?.trim():'';
   var marcaVeh=tramite&&marcaMap[tramite]?document.getElementById(marcaMap[tramite])?.value?.trim():'';
   var modeloVeh=tramite&&modeloMap[tramite]?document.getElementById(modeloMap[tramite])?.value?.trim():'';
@@ -2186,8 +2186,8 @@ function generarMensaje(){
   // Guardar datos para seguimiento
   // Obtener marca y modelo del formulario activo
   // Obtener marca y modelo - primero del desglose, luego del formulario
-  const marcaMap={alta:'alta-veh-marca',placas:'pla-veh-marca',baja:'baja-veh-marca',cambio:'cam-marca'};
-  const modeloMap={alta:'alta-veh-modelo',placas:'pla-veh-modelo',baja:'baja-veh-modelo',cambio:'cam-modelo'};
+  const marcaMap={alta:'alta-veh-marca',placas:'pla-veh-marca',baja:'baja-veh-marca',cambio:'cam-marca',refrendo:'ref-veh-marca',seguros:'seg-marca'};
+  const modeloMap={alta:'alta-veh-modelo',placas:'pla-veh-modelo',baja:'baja-veh-modelo',cambio:'cam-modelo',refrendo:'ref-veh-modelo',seguros:'seg-modelo'};
   var marcaVal=tramite&&marcaMap[tramite]?document.getElementById(marcaMap[tramite])?.value?.trim():'';
   var modeloVal=tramite&&modeloMap[tramite]?document.getElementById(modeloMap[tramite])?.value?.trim():'';
   // Si no hay marca en el formulario, buscar en el desglose
