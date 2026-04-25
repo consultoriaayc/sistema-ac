@@ -539,7 +539,7 @@ supa=supabase.createClient(SUPA_URL,SUPA_KEY);
     </div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
       <div class="save-ind" id="save-ind"><div class="save-dot"></div>
-    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.32</span><span id="save-txt">guardado</span></div>
+    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.33</span><span id="save-txt">guardado</span></div>
       <button onclick="exportarDatos()" style="padding:5px 12px;background:#059669;color:white;border:none;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Exportar</button>
       <label style="padding:5px 12px;background:#1e3a5f;color:white;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Importar<input type="file" id="import-file" accept=".json" style="display:none" onchange="importarDatos(this)"/></label>
       <div class="estado-badge">Morelos</div>
@@ -1444,9 +1444,16 @@ function getDerechoImporte(concepto, idTipoPlaca){
   var conceptoBase=concepto.split(' ')[0];
   var dr;
   if(id){
+    // Buscar exacto: mismo concepto base Y mismo id_tipo_placa
     dr=cotDerechos.find(function(d){
       return d.concepto.startsWith(conceptoBase) && parseInt(d.id_tipo_placa)===id;
     });
+    // Si no encontro, buscar solo por id_tipo_placa (cualquier concepto con ese tipo)
+    if(!dr){
+      dr=cotDerechos.find(function(d){
+        return parseInt(d.id_tipo_placa)===id;
+      });
+    }
   }
   if(!dr){
     dr=cotDerechos.find(function(d){
@@ -2178,10 +2185,20 @@ function generarMensaje(){
   document.getElementById('result-card').scrollIntoView({behavior:'smooth',block:'nearest'});
   // Guardar datos para seguimiento
   // Obtener marca y modelo del formulario activo
+  // Obtener marca y modelo - primero del desglose, luego del formulario
   const marcaMap={alta:'alta-veh-marca',placas:'pla-veh-marca',baja:'baja-veh-marca',cambio:'cam-marca'};
   const modeloMap={alta:'alta-veh-modelo',placas:'pla-veh-modelo',baja:'baja-veh-modelo',cambio:'cam-modelo'};
-  const marcaVal=tramite&&marcaMap[tramite]?document.getElementById(marcaMap[tramite])?.value?.trim():'';
-  const modeloVal=tramite&&modeloMap[tramite]?document.getElementById(modeloMap[tramite])?.value?.trim():'';
+  var marcaVal=tramite&&marcaMap[tramite]?document.getElementById(marcaMap[tramite])?.value?.trim():'';
+  var modeloVal=tramite&&modeloMap[tramite]?document.getElementById(modeloMap[tramite])?.value?.trim():'';
+  // Si no hay marca en el formulario, buscar en el desglose
+  if(!marcaVal&&desgloseData.items){
+    var vehItem=desgloseData.items.find(function(i){return i.label&&i.label.toLowerCase().includes('vehiculo')||i.label&&i.label.toLowerCase().includes('vehículo');});
+    if(vehItem){
+      var parts=vehItem.label.split('—');
+      if(parts.length>=2)marcaVal=parts[1].trim();
+      if(parts.length>=3)modeloVal=parts[2].trim();
+    }
+  }
   window._lastCot={cliente,nombreTramite,total:desgloseData.total,empresa,mensaje,marca:marcaVal,modelo:modeloVal};
   // Mostrar boton de registrar en seguimiento
   const sbtn=document.getElementById('send-cot-btn');
