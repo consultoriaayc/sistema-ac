@@ -1160,7 +1160,7 @@ supa=supabase.createClient(SUPA_URL,SUPA_KEY);
     </div>
       <div style="background:#eff6ff;border:1px solid #1e3a5f22;border-radius:10px;padding:16px;margin-bottom:12px;">
       <div style="font-size:11px;font-weight:700;color:#1e3a5f;text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px;">Identificación del vehículo</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;"><div><label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:6px;">Número de serie <span style="color:#dc2626;">*</span></label><input id="veh-serie" type="text" placeholder="17 caracteres"  style="width:100%;padding:12px 14px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:14px;font-family:Inter,sans-serif;color:#1f2937;outline:none;background:white;"/></div><div><label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:6px;">Placa <span style="font-size:11px;color:#9ca3af;font-weight:400;">(opcional)</span></label><input id="veh-placa" type="text" placeholder="Ej. ABC1234"  style="width:100%;padding:12px 14px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:14px;font-family:Inter,sans-serif;color:#1f2937;outline:none;background:white;"/></div></div><div style="margin-bottom:14px;"><label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:6px;">Entidad <span style="color:#dc2626;">*</span></label><select id="veh-entidad"  style="width:100%;padding:12px 14px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:14px;font-family:Inter,sans-serif;color:#1f2937;background:white;outline:none;"><option value="">Selecciona estado...</option><option>Aguascalientes</option><option>Baja California</option><option>Baja California Sur</option><option>Campeche</option><option>Chiapas</option><option>Chihuahua</option><option>Ciudad de México</option><option>Coahuila</option><option>Colima</option><option>Durango</option><option>Estado de México</option><option>Guanajuato</option><option>Guerrero</option><option>Hidalgo</option><option>Jalisco</option><option>Michoacán</option><option>Morelos</option><option>Nayarit</option><option>Nuevo León</option><option>Oaxaca</option><option>Puebla</option><option>Querétaro</option><option>Quintana Roo</option><option>San Luis Potosí</option><option>Sinaloa</option><option>Sonora</option><option>Tabasco</option><option>Tamaulipas</option><option>Tlaxcala</option><option>Veracruz</option><option>Yucatán</option><option>Zacatecas</option></select></div><div style="margin-bottom:14px;"><label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:6px;">Tipo de vehículo <span style="color:#dc2626;">*</span></label><select id="veh-tipo"  style="width:100%;padding:12px 14px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:14px;font-family:Inter,sans-serif;color:#1f2937;background:white;outline:none;"><option value="">Selecciona tipo...</option></select></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;"><div><label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:6px;">Número de serie <span style="color:#dc2626;">*</span></label><input id="veh-serie" type="text" placeholder="17 caracteres" oninput="this.value=this.value.toUpperCase()" onblur="validarSerieDuplicada()" style="width:100%;padding:12px 14px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:14px;font-family:Inter,sans-serif;color:#1f2937;outline:none;background:white;"/><div id="veh-serie-msg" style="display:none;margin-top:6px;padding:8px 12px;background:#fef2f2;border:1.5px solid #fca5a5;border-radius:6px;font-size:12px;color:#dc2626;font-weight:600;"></div></div><div><label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:6px;">Placa <span style="font-size:11px;color:#9ca3af;font-weight:400;">(opcional)</span></label><input id="veh-placa" type="text" placeholder="Ej. ABC1234"  style="width:100%;padding:12px 14px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:14px;font-family:Inter,sans-serif;color:#1f2937;outline:none;background:white;"/></div></div><div style="margin-bottom:14px;"><label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:6px;">Entidad <span style="color:#dc2626;">*</span></label><select id="veh-entidad"  style="width:100%;padding:12px 14px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:14px;font-family:Inter,sans-serif;color:#1f2937;background:white;outline:none;"><option value="">Selecciona estado...</option><option>Aguascalientes</option><option>Baja California</option><option>Baja California Sur</option><option>Campeche</option><option>Chiapas</option><option>Chihuahua</option><option>Ciudad de México</option><option>Coahuila</option><option>Colima</option><option>Durango</option><option>Estado de México</option><option>Guanajuato</option><option>Guerrero</option><option>Hidalgo</option><option>Jalisco</option><option>Michoacán</option><option>Morelos</option><option>Nayarit</option><option>Nuevo León</option><option>Oaxaca</option><option>Puebla</option><option>Querétaro</option><option>Quintana Roo</option><option>San Luis Potosí</option><option>Sinaloa</option><option>Sonora</option><option>Tabasco</option><option>Tamaulipas</option><option>Tlaxcala</option><option>Veracruz</option><option>Yucatán</option><option>Zacatecas</option></select></div><div style="margin-bottom:14px;"><label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:6px;">Tipo de vehículo <span style="color:#dc2626;">*</span></label><select id="veh-tipo"  style="width:100%;padding:12px 14px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:14px;font-family:Inter,sans-serif;color:#1f2937;background:white;outline:none;"><option value="">Selecciona tipo...</option></select></div>
     </div>
       <div style="background:#eff6ff;border:1px solid #1e3a5f22;border-radius:10px;padding:16px;margin-bottom:12px;">
       <div style="font-size:11px;font-weight:700;color:#1e3a5f;text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px;">Datos del vehículo</div>
@@ -3845,6 +3845,22 @@ function renderVehiculos(){
   }).join('');
 }
 
+function validarSerieDuplicada(){
+  var input=document.getElementById('veh-serie');
+  var msg=document.getElementById('veh-serie-msg');
+  var serie=input.value.trim().toUpperCase();
+  if(!serie||serie.length<6){msg.style.display='none';input.style.borderColor='#e5e7eb';return;}
+  var dup=vehiculos.find(function(v){return v.numeroSerie===serie&&v.id!==editingVehId;});
+  if(dup){
+    var cli=clientes.find(function(c){return c.id===dup.clienteId;});
+    msg.innerHTML='⚠️ Esta serie ya está registrada: <strong>'+dup.marca+' '+dup.modelo+' '+dup.anio+'</strong>'+(dup.placa?' · Placa: <strong>'+dup.placa+'</strong>':'')+(cli?' · Cliente: <strong>'+cli.nombre+'</strong>':'');
+    msg.style.display='block';
+    input.style.borderColor='#dc2626';
+  } else {
+    msg.style.display='none';
+    input.style.borderColor=serie.length>=6?'#10b981':'#e5e7eb';
+  }
+}
 function filtrarVehiculos(){
   vehFilter=document.getElementById('veh-buscar').value.trim();
   renderVehiculos();
@@ -3853,7 +3869,7 @@ function filtrarVehiculos(){
 function openNuevoVehiculo(){
   editingVehId=null;
   // No resetear _ctaVuelve aqui, se maneja desde abrirAltaVehiculoCTA
-  document.getElementById('mveh-title').textContent='Nuevo vehículo';
+  document.getElementById('mveh-title').textContent='Nuevo vehículo';document.getElementById('veh-serie-msg').style.display='none';document.getElementById('veh-serie').style.borderColor='#e5e7eb';
   ['veh-propietario','veh-serie','veh-placa','veh-anio','veh-modelo',
    'veh-version','veh-fecha-factura','veh-importe-factura','veh-motor','veh-clave',
    'veh-tc-venc','veh-poliza-venc','veh-verif-venc'].forEach(function(id){
