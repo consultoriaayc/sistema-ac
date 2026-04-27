@@ -611,10 +611,6 @@ supa=supabase.createClient(SUPA_URL,SUPA_KEY);
         <span style="font-size:12px;font-weight:600;color:var(--text);display:block;line-height:1.2;">Permiso</span>
         <span style="font-size:10px;color:var(--text-3);margin-top:1px;display:block;">Carga</span>
       </button>
-      <button class="tab" onclick="selTab('circular',this)" style="background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:10px 8px;cursor:pointer;text-align:center;transition:all .18s;box-shadow:var(--shadow);">
-        <div style="font-size:18px;">🚗</div>
-        <div style="font-size:10px;font-weight:600;margin-top:2px;">Circ.</div>
-      </button>
       <button class="tab" onclick="selTab('seguro',this)" style="background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:10px 8px;cursor:pointer;text-align:center;transition:all .18s;box-shadow:var(--shadow);">
         <span style="font-size:18px;margin-bottom:3px;display:block;">🛡️</span>
         <span style="font-size:12px;font-weight:600;color:var(--text);display:block;line-height:1.2;">Seguro</span>
@@ -886,62 +882,91 @@ supa=supabase.createClient(SUPA_URL,SUPA_KEY);
 
   <!-- PERMISO DE CARGA -->
   <div id="form-permiso" class="hidden">
-    <div class="card">
-      <div class="card-title">Datos del cliente</div>
-      <div class="field"><label>Nombre del cliente</label><input type="text" id="per-cliente" placeholder="Ej. Juan Pérez"/></div>
-      <div class="field"><label>Empresa / tipo de cliente</label><select id="per-empresa" onchange="calcPermiso()"></select></div>
-    </div>
+    <!-- Selector tipo de permiso -->
     <div class="card">
       <div class="card-title">Tipo de permiso</div>
-      <div class="alta-tipos" style="grid-template-columns:1fr 1fr;gap:8px;margin-bottom:0;">
-        <div class="tipo-radio"><input type="radio" name="per-tipo" value="carga" id="per-carga" checked onchange="calcPermiso()"><label for="per-carga">🚛 Permiso de carga</label></div>
-        <div class="tipo-radio"><input type="radio" name="per-tipo" value="revista" id="per-revista" onchange="calcPermiso()"><label for="per-revista">🔧 Revista mecánica</label></div>
-        <div class="tipo-radio"><input type="radio" name="per-tipo" value="revista_sp" id="per-revista-sp" onchange="calcPermiso()"><label for="per-revista-sp">📋 Revista mec. S/Presentar</label></div>
+      <div class="alta-tipos" style="grid-template-columns:1fr 1fr;gap:10px;">
+        <div class="tipo-radio"><input type="radio" name="per-tipo-principal" value="carga" id="per-tipo-carga" checked onchange="toggleTipoPermiso()"><label for="per-tipo-carga">🚛 Permiso de carga</label></div>
+        <div class="tipo-radio"><input type="radio" name="per-tipo-principal" value="circular" id="per-tipo-circular" onchange="toggleTipoPermiso()"><label for="per-tipo-circular">🚗 Permiso para circular</label></div>
       </div>
     </div>
-    <div class="card">
-      <div class="card-title">Concepto seleccionado</div>
-      <div style="background:#f9fafb;border:1px solid var(--border);border-radius:8px;padding:12px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-          <div><div class="toggle-label" id="per-concepto-nombre">Permiso de carga</div><div class="toggle-sub" id="per-precio-lbl">Precio según cliente</div></div>
-          <span id="per-precio-val" style="font-size:14px;font-weight:700;color:var(--accent-text);"></span>
-        </div>
-      </div>
-    </div>
-    <div class="factura-card"><div class="toggle-row"><div class="toggle-info"><div class="toggle-label">🧾 ¿El cliente requiere factura?</div><div class="toggle-sub">Se agrega IVA 16% sobre el concepto</div></div><label class="switch"><input type="checkbox" id="per-factura-chk" onchange="calcPermiso()"/><span class="slider"></span></label></div></div>
-    <div class="card"><div class="card-title">Desglose de cotización</div><div id="per-desglose"></div></div>
-  </div>
 
-  <!-- PERMISO PARA CIRCULAR -->
-  <div id="form-circular" class="hidden">
-    <div class="card">
-      <div class="card-title">Datos del cliente</div>
-      <div class="field"><label>Nombre del cliente</label><input type="text" id="circ-cliente" placeholder="Ej. Juan Pérez"/></div>
-      <div class="field"><label>Vehículo (opcional)</label><input type="text" id="circ-vehiculo" placeholder="Ej. Nissan Versa 2022"/></div>
-    </div>
-    <div class="card">
-      <div class="card-title">Conceptos</div>
-      <div style="background:#f9fafb;border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:10px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-          <div><div class="toggle-label">Permiso para circular</div><div class="toggle-sub">Tarifa fija</div></div>
-          <div style="display:flex;align-items:center;gap:10px;">
-            <span style="font-size:14px;font-weight:700;color:var(--accent-text);">$400.00</span>
-            <label class="switch"><input type="checkbox" id="circ-permiso-chk" checked onchange="calcCircular()"/><span class="slider"></span></label>
+    <!-- ── SECCIÓN CARGA ── -->
+    <div id="per-sec-carga">
+      <div class="card">
+        <div class="card-title">Datos del cliente</div>
+        <div class="field"><label>Nombre del cliente</label><input type="text" id="per-cliente" placeholder="Ej. Juan Pérez" oninput="calcPermiso()"/></div>
+        <div class="field"><label>Empresa / tipo de cliente</label><select id="per-empresa" onchange="calcPermiso()"></select></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Conceptos <span style="font-size:11px;color:#9ca3af;font-weight:400;">(selecciona uno o más)</span></div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div style="background:#f9fafb;border:1px solid var(--border);border-radius:8px;padding:12px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <div><div class="toggle-label">Permiso de carga</div><div class="toggle-sub" id="per-lbl-carga">Precio según cliente</div></div>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <span id="per-val-carga" style="font-size:13px;font-weight:700;color:var(--accent-text);"></span>
+                <label class="switch"><input type="checkbox" id="per-chk-carga" checked onchange="calcPermiso()"/><span class="slider"></span></label>
+              </div>
+            </div>
+          </div>
+          <div style="background:#f9fafb;border:1px solid var(--border);border-radius:8px;padding:12px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <div><div class="toggle-label">Revista mecánica</div><div class="toggle-sub" id="per-lbl-revista">Precio según cliente</div></div>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <span id="per-val-revista" style="font-size:13px;font-weight:700;color:var(--accent-text);"></span>
+                <label class="switch"><input type="checkbox" id="per-chk-revista" onchange="calcPermiso()"/><span class="slider"></span></label>
+              </div>
+            </div>
+          </div>
+          <div style="background:#f9fafb;border:1px solid var(--border);border-radius:8px;padding:12px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <div><div class="toggle-label">Revista mecánica S/Presentar</div><div class="toggle-sub" id="per-lbl-revista-sp">Precio según cliente</div></div>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <span id="per-val-revista-sp" style="font-size:13px;font-weight:700;color:var(--accent-text);"></span>
+                <label class="switch"><input type="checkbox" id="per-chk-revista-sp" onchange="calcPermiso()"/><span class="slider"></span></label>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-      <div style="background:#f9fafb;border:1px solid var(--border);border-radius:8px;padding:12px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-          <div><div class="toggle-label">Mensajería</div><div class="toggle-sub">Monto manual</div></div>
-          <label class="switch"><input type="checkbox" id="circ-mensajeria-chk" onchange="calcCircular()"/><span class="slider"></span></label>
-        </div>
-        <div id="circ-mensajeria-wrap" style="display:none;margin-top:8px;">
-          <input type="number" id="circ-mensajeria-monto" placeholder="Ej. 150" min="0" oninput="calcCircular()" style="width:100%;padding:10px 12px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:14px;font-family:Inter,sans-serif;color:#1f2937;outline:none;"/>
+      <div class="factura-card"><div class="toggle-row"><div class="toggle-info"><div class="toggle-label">🧾 ¿El cliente requiere factura?</div><div class="toggle-sub">Se agrega IVA 16% sobre los conceptos seleccionados</div></div><label class="switch"><input type="checkbox" id="per-factura-chk" onchange="calcPermiso()"/><span class="slider"></span></label></div></div>
+      <div class="card"><div class="card-title">Desglose de cotización</div><div id="per-desglose"></div></div>
+    </div>
+
+    <!-- ── SECCIÓN CIRCULAR ── -->
+    <div id="per-sec-circular" style="display:none;">
+      <div class="card">
+        <div class="card-title">Datos del cliente</div>
+        <div class="field"><label>Nombre del cliente</label><input type="text" id="circ-cliente" placeholder="Ej. Juan Pérez"/></div>
+        <div class="field"><label>Vehículo (opcional)</label><input type="text" id="circ-vehiculo" placeholder="Ej. Nissan Versa 2022"/></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Conceptos</div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div style="background:#f9fafb;border:1px solid var(--border);border-radius:8px;padding:12px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <div><div class="toggle-label">Permiso para circular</div><div class="toggle-sub">Tarifa fija</div></div>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <span style="font-size:13px;font-weight:700;color:var(--accent-text);">$400.00</span>
+                <label class="switch"><input type="checkbox" id="circ-permiso-chk" checked onchange="calcCircular()"/><span class="slider"></span></label>
+              </div>
+            </div>
+          </div>
+          <div style="background:#f9fafb;border:1px solid var(--border);border-radius:8px;padding:12px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+              <div><div class="toggle-label">Mensajería</div><div class="toggle-sub">Monto manual</div></div>
+              <label class="switch"><input type="checkbox" id="circ-mensajeria-chk" onchange="calcCircular()"/><span class="slider"></span></label>
+            </div>
+            <div id="circ-mensajeria-wrap" style="display:none;margin-top:8px;">
+              <input type="number" id="circ-mensajeria-monto" placeholder="Ej. 150" min="0" oninput="calcCircular()" style="width:100%;padding:10px 12px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:14px;font-family:Inter,sans-serif;color:#1f2937;outline:none;"/>
+            </div>
+          </div>
         </div>
       </div>
+      <div class="factura-card"><div class="toggle-row"><div class="toggle-info"><div class="toggle-label">🧾 ¿El cliente requiere factura?</div><div class="toggle-sub">Se agrega IVA 16%</div></div><label class="switch"><input type="checkbox" id="circ-factura-chk" onchange="calcCircular()"/><span class="slider"></span></label></div></div>
+      <div class="card"><div class="card-title">Desglose de cotización</div><div id="circ-desglose"></div></div>
     </div>
-    <div class="factura-card"><div class="toggle-row"><div class="toggle-info"><div class="toggle-label">🧾 ¿El cliente requiere factura?</div><div class="toggle-sub">Se agrega IVA 16%</div></div><label class="switch"><input type="checkbox" id="circ-factura-chk" onchange="calcCircular()"/><span class="slider"></span></label></div></div>
-    <div class="card"><div class="card-title">Desglose de cotización</div><div id="circ-desglose"></div></div>
   </div>
 
   <!-- SEGURO VEHICULAR -->
@@ -1914,7 +1939,7 @@ function poblarSelects(){
   });
 }
 function getP(empresa){return PRECIOS[empresa]||PRECIOS['publico'];}
-function selTab(t,btn){tramite=t;document.querySelectorAll('.tab').forEach(b=>{b.style.background='var(--card)';b.style.borderColor='var(--border)';b.style.boxShadow='var(--shadow)';});btn.style.background='var(--accent-light)';btn.style.borderColor='var(--accent)';btn.style.boxShadow='0 0 0 3px rgba(30,58,95,0.1)';document.getElementById('placeholder').classList.add('hidden');['alta','refrendo','cambio','placas','baja','verif','permiso','circular','seguro'].forEach(x=>document.getElementById('form-'+x).classList.add('hidden'));document.getElementById('form-'+t).classList.remove('hidden');document.getElementById('gen-area').classList.remove('hidden');document.getElementById('result-card').classList.add('hidden');document.getElementById('gen-error').classList.add('hidden');if(t==='refrendo')calcRefrendo();if(t==='placas')calcPlacas();if(t==='baja')calcBaja();if(t==='alta')cambiarTipoAlta();if(t==='verif')calcVerif();if(t==='permiso')calcPermiso();if(t==='circular')calcCircular();if(t==='seguro'){document.getElementById('gen-area').classList.add('hidden');document.getElementById('result-card').classList.add('hidden');initTablaSeguro();}window.scrollTo({top:0,behavior:'smooth'});}
+function selTab(t,btn){tramite=t;document.querySelectorAll('.tab').forEach(b=>{b.style.background='var(--card)';b.style.borderColor='var(--border)';b.style.boxShadow='var(--shadow)';});btn.style.background='var(--accent-light)';btn.style.borderColor='var(--accent)';btn.style.boxShadow='0 0 0 3px rgba(30,58,95,0.1)';document.getElementById('placeholder').classList.add('hidden');['alta','refrendo','cambio','placas','baja','verif','permiso','seguro'].forEach(x=>document.getElementById('form-'+x).classList.add('hidden'));document.getElementById('form-'+t).classList.remove('hidden');document.getElementById('gen-area').classList.remove('hidden');document.getElementById('result-card').classList.add('hidden');document.getElementById('gen-error').classList.add('hidden');if(t==='refrendo')calcRefrendo();if(t==='placas')calcPlacas();if(t==='baja')calcBaja();if(t==='alta')cambiarTipoAlta();if(t==='verif')calcVerif();if(t==='permiso')toggleTipoPermiso();if(t==='seguro'){document.getElementById('gen-area').classList.add('hidden');document.getElementById('result-card').classList.add('hidden');initTablaSeguro();}window.scrollTo({top:0,behavior:'smooth'});}
 function setRefTipo(tipo){refTipo=tipo;document.getElementById('ref-btn-existente').classList.toggle('active',tipo==='existente');document.getElementById('ref-btn-nuevo').classList.toggle('active',tipo==='nuevo');document.getElementById('ref-info-existente').classList.toggle('hidden',tipo!=='existente');document.getElementById('ref-info-nuevo').classList.toggle('hidden',tipo!=='nuevo');}
 function toggleRefAdeudo(){document.getElementById('ref-adeudo-campo').classList.toggle('hidden',!document.getElementById('ref-adeudo-chk').checked);calcRefrendo();}
 function toggleAltaAdeudo(){document.getElementById('alta-adeudo-campo').classList.toggle('hidden',!document.getElementById('alta-adeudo-chk').checked);calcAlta();}
@@ -1934,9 +1959,9 @@ function renderDesglose(containerId,items,total,empresa){
     const nombre=empresa.charAt(0)+empresa.slice(1).toLowerCase();
     html+='<div class="empresa-badge">🏢 Precio especial: '+nombre+'</div>';
   }
-  const clienteMap={alta:'alta-cliente',refrendo:'ref-cliente',cambio:'cam-cliente',placas:'pla-cliente',baja:'baja-cliente',verif:'ver-cliente',permiso:'per-cliente',circular:'circ-cliente'};
-  const tramiteNombres={alta:'Alta de vehiculo',refrendo:'Refrendo / tenencia',cambio:'Cambio de propietario',placas:'Reposicion de placas',baja:'Baja definitiva',verif:'Verificacion vehicular',permiso:'Permiso de carga',circular:'Permiso para circular'};
-  const clienteVal=tramite&&clienteMap[tramite]?document.getElementById(clienteMap[tramite])?.value?.trim():'';
+  const clienteMap={alta:'alta-cliente',refrendo:'ref-cliente',cambio:'cam-cliente',placas:'pla-cliente',baja:'baja-cliente',verif:'ver-cliente',permiso:'per-cliente'};
+  const tramiteNombres={alta:'Alta de vehiculo',refrendo:'Refrendo / tenencia',cambio:'Cambio de propietario',placas:'Reposicion de placas',baja:'Baja definitiva',verif:'Verificacion vehicular',permiso:'Permiso'};
+  var _cMapKey=tramite;if(tramite==='permiso'&&(document.querySelector('input[name="per-tipo-principal"]:checked')?.value||'carga')==='circular')_cMapKey='_circ';var clienteVal=_cMapKey==='_circ'?(document.getElementById('circ-cliente')?.value?.trim()||''):(tramite&&clienteMap[tramite]?document.getElementById(clienteMap[tramite])?.value?.trim():'');
   const tramiteVal=tramite&&tramiteNombres[tramite]?tramiteNombres[tramite]:'';
   html+='<div class="desglose">';
   // Folio: tomar el ultimo folio generado o generar preview
@@ -2196,7 +2221,7 @@ function generarMensaje(){
   if(!tramite){mostrarError('Selecciona el tipo de trámite primero.');return;}
   if(!desgloseData.total){mostrarError('Completa los datos del trámite para calcular la cotización.');return;}
   document.getElementById('gen-error').classList.add('hidden');
-  const clienteMap={alta:'alta-cliente',refrendo:'ref-cliente',cambio:'cam-cliente',placas:'pla-cliente',baja:'baja-cliente',verif:'ver-cliente',permiso:'per-cliente',circular:'circ-cliente'};
+  const clienteMap={alta:'alta-cliente',refrendo:'ref-cliente',cambio:'cam-cliente',placas:'pla-cliente',baja:'baja-cliente',verif:'ver-cliente',permiso:'per-cliente'};
   const empresaMap={alta:'alta-empresa',refrendo:'ref-empresa',cambio:'cam-empresa',placas:'pla-empresa',baja:'baja-empresa',verif:'ver-empresa',permiso:'per-empresa'};
   const facturaMap={alta:'alta-factura-chk',refrendo:'ref-factura-chk',cambio:'cam-factura-chk',placas:'pla-factura-chk',baja:'baja-factura-chk',verif:'ver-factura-chk',permiso:'per-factura-chk'};
   const cliente=document.getElementById(clienteMap[tramite])?.value?.trim()||'';
@@ -2204,7 +2229,7 @@ function generarMensaje(){
   const conFactura=document.getElementById(facturaMap[tramite])?.checked||false;
   let nombreTramite='';
   if(tramite==='alta'){const tipo=getTipoAlta();const nombres={'nuevo':'Alta de auto nuevo','seminuevo':'Alta de auto seminuevo','foraneo':'Alta de auto foráneo','seminuevo-cambio':'Alta seminuevo con cambio de propietario','foraneo-cambio':'Alta foráneo con cambio de propietario'};nombreTramite=nombres[tipo];}
-  else{const nombres={refrendo:'Refrendo / tenencia',cambio:'Cambio de propietario',placas:'Reposición de placas',baja:'Baja definitiva',verif:'Verificación vehicular',permiso:'Permiso de carga',circular:'Permiso para circular'};nombreTramite=nombres[tramite];}
+  else{const nombres={refrendo:'Refrendo / tenencia',cambio:'Cambio de propietario',placas:'Reposición de placas',baja:'Baja definitiva',verif:'Verificación vehicular'};if(tramite==='permiso'){var subtipo=document.querySelector('input[name="per-tipo-principal"]:checked')?.value||'carga';nombreTramite=subtipo==='circular'?'Permiso para circular':'Permiso de carga';}else{nombreTramite=nombres[tramite];}}
   const lineas=desgloseData.items.map(i=>`  • ${i.label}: ${mxn(i.val)}`).join('\n');
   const total=mxn(desgloseData.total);
   let notas='';
@@ -2638,24 +2663,34 @@ function calcVerif(){
   renderDesglose('ver-desglose',items,total,empresa);
 }
 
+function toggleTipoPermiso(){
+  var tipo=document.querySelector('input[name="per-tipo-principal"]:checked')?.value||'carga';
+  document.getElementById('per-sec-carga').style.display=tipo==='carga'?'block':'none';
+  document.getElementById('per-sec-circular').style.display=tipo==='circular'?'block':'none';
+  if(tipo==='carga')calcPermiso(); else calcCircular();
+}
 function calcPermiso(){
   if(!cotEstadoId){alert('Selecciona el estado primero.');return;}
   const empresa=document.getElementById('per-empresa')?.value||'publico';
   const idCliente=getEmpresaIdCliente();
   const factura=document.getElementById('per-factura-chk').checked;
-  const tipo=document.querySelector('input[name="per-tipo"]:checked')?.value||'carga';
   const HON_PER=getHonorarioImporte(10,idCliente)||950;
   const HON_REV=getHonorarioImporte(11,idCliente)||1650;
   const HON_REV_SP=getHonorarioImporte(12,idCliente)||1650;
-  const conceptoMap={carga:{label:'Permiso de carga',val:HON_PER},revista:{label:'Revista mecánica',val:HON_REV},revista_sp:{label:'Revista mecánica S/Presentar',val:HON_REV_SP}};
-  const concepto=conceptoMap[tipo];
+  const lblTipo=idCliente?'Precio especial':'Precio público general';
+  var lbl,val;
+  lbl=document.getElementById('per-lbl-carga');val=document.getElementById('per-val-carga');
+  if(lbl)lbl.textContent=lblTipo;if(val)val.textContent='$'+HON_PER.toLocaleString('es-MX');
+  lbl=document.getElementById('per-lbl-revista');val=document.getElementById('per-val-revista');
+  if(lbl)lbl.textContent=lblTipo;if(val)val.textContent='$'+HON_REV.toLocaleString('es-MX');
+  lbl=document.getElementById('per-lbl-revista-sp');val=document.getElementById('per-val-revista-sp');
+  if(lbl)lbl.textContent=lblTipo;if(val)val.textContent='$'+HON_REV_SP.toLocaleString('es-MX');
   const items=[];let total=0;let baseIva=0;
-  items.push({label:concepto.label,val:concepto.val});total+=concepto.val;baseIva+=concepto.val;
-  if(factura){const iva=Math.round(baseIva*0.16*100)/100;items.push({label:'IVA 16%',val:iva,esIva:true});total+=iva;}
-  var nombre=document.getElementById('per-concepto-nombre');var lbl=document.getElementById('per-precio-lbl');var val=document.getElementById('per-precio-val');
-  if(nombre)nombre.textContent=concepto.label;
-  if(lbl)lbl.textContent=idCliente?'Precio especial':'Precio público general';
-  if(val)val.textContent='$'+concepto.val.toLocaleString('es-MX');
+  if(document.getElementById('per-chk-carga')?.checked){items.push({label:'Permiso de carga',val:HON_PER});total+=HON_PER;baseIva+=HON_PER;}
+  if(document.getElementById('per-chk-revista')?.checked){items.push({label:'Revista mecánica',val:HON_REV});total+=HON_REV;baseIva+=HON_REV;}
+  if(document.getElementById('per-chk-revista-sp')?.checked){items.push({label:'Revista mecánica S/Presentar',val:HON_REV_SP});total+=HON_REV_SP;baseIva+=HON_REV_SP;}
+  if(factura&&baseIva>0){const iva=Math.round(baseIva*0.16*100)/100;items.push({label:'IVA 16%',val:iva,esIva:true});total+=iva;}
+  if(!items.length){document.getElementById('per-desglose').innerHTML='<div style="color:#9ca3af;font-size:13px;text-align:center;padding:12px;">Selecciona al menos un concepto</div>';return;}
   renderDesglose('per-desglose',items,total,empresa);
 }
 
