@@ -410,7 +410,7 @@ async function onCambioEstado(){
   cotHonorarios=hr.data||[];
   cotConceptos=cp.data||[];
   console.log('Estado cargado: '+cotDerechos.length+' derechos, '+cotHonorarios.length+' honorarios, '+cotConceptos.length+' conceptos');
-  if(typeof clientes!=='undefined'&&clientes.length)poblarSelects();
+  poblarSelects();
   // Recalcular si hay tramite activo
   if(tramite)recalcularTramiteActivo();
 }
@@ -1697,6 +1697,7 @@ async function cloudLoad(){
   document.getElementById('loading-screen').classList.add('hidden');
   updateBadges();
   poblarMeses();
+  poblarSelects();
 }
 async function cloudSave(){
   setSaveInd('saving');
@@ -1900,7 +1901,7 @@ async function cargarPrecios(){
       const precioStr=String(row.precio||'').replace(/[$,\s]/g,'');
       const precio=parseFloat(precioStr);
       if(!empresa||!tramiteCSV||isNaN(precio))return;
-      if(!nuevos[empresa])nuevos[empresa]={alta:2500,refrendo:490,cambio:2500,placas:2500,acta:600,baja:1900,permiso:950,revista:1650};
+      if(!nuevos[empresa])nuevos[empresa]={alta:2500,refrendo:490,cambio:2500,placas:2500,acta:600,baja:1900,permiso:950,revista:950};
       const clave=mapTramite(tramiteCSV);
       if(clave)nuevos[empresa][clave]=precio;
     });
@@ -2673,8 +2674,8 @@ function calcPermiso(){
   const idCliente=getEmpresaIdCliente();
   const factura=document.getElementById('per-factura-chk').checked;
   const HON_PER=getHonorarioImporte(10,idCliente)||950;
-  const HON_REV=getHonorarioImporte(11,idCliente)||1650;
-  const HON_REV_SP=getHonorarioImporte(12,idCliente)||1650;
+  const HON_REV=getHonorarioImporte(11,idCliente)||950;
+  const HON_REV_SP=getHonorarioImporte(12,idCliente)||950;
   const lblTipo=idCliente?'Precio especial':'Precio público general';
   var lbl,val;
   lbl=document.getElementById('per-lbl-carga');val=document.getElementById('per-val-carga');
@@ -4249,7 +4250,7 @@ async function onCambioEstado(){
   cotHonorarios=hr.data||[];
   cotConceptos=cp.data||[];
   console.log('Estado cargado: '+cotDerechos.length+' derechos, '+cotHonorarios.length+' honorarios, '+cotConceptos.length+' conceptos');
-  if(typeof clientes!=='undefined'&&clientes.length)poblarSelects();
+  poblarSelects();
   // Recalcular si hay tramite activo
   if(tramite)recalcularTramiteActivo();
 }
