@@ -518,7 +518,7 @@ supa=supabase.createClient(SUPA_URL,SUPA_KEY);
   await cloudLoad(); // datos principales
   iniciarRealtime();
   poblarSelectsTipo(); // tipo de placa en formularios
-  if(cotEstadoId)poblarSelects(); // empresas en cotizador
+  poblarSelects(); // empresas en cotizador
 })();
 
 </script>
@@ -539,7 +539,7 @@ supa=supabase.createClient(SUPA_URL,SUPA_KEY);
     </div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
       <div class="save-ind" id="save-ind"><div class="save-dot"></div>
-    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.41</span><span id="save-txt">guardado</span></div>
+    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.43</span><span id="save-txt">guardado</span></div>
       <button onclick="exportarDatos()" style="padding:5px 12px;background:#059669;color:white;border:none;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Exportar</button>
       <label style="padding:5px 12px;background:#1e3a5f;color:white;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Importar<input type="file" id="import-file" accept=".json" style="display:none" onchange="importarDatos(this)"/></label>
       <div class="estado-badge">Morelos</div>
@@ -2675,7 +2675,7 @@ function calcPermiso(){
   const factura=document.getElementById('per-factura-chk').checked;
   const HON_PER=getHonorarioImporte(10,idCliente)||950;
   const HON_REV=getHonorarioImporte(11,idCliente)||950;
-  const HON_REV_SP=getHonorarioImporte(12,idCliente)||950;
+  const HON_REV_SP=getHonorarioImporte(12,idCliente)||1250;
   const lblTipo=idCliente?'Precio especial':'Precio público general';
   var lbl,val;
   lbl=document.getElementById('per-lbl-carga');val=document.getElementById('per-val-carga');
@@ -4359,7 +4359,7 @@ supa=supabase.createClient(SUPA_URL,SUPA_KEY);
   await cloudLoad(); // datos principales
   iniciarRealtime();
   poblarSelectsTipo(); // tipo de placa en formularios
-  if(cotEstadoId)poblarSelects(); // empresas en cotizador
+  poblarSelects(); // empresas en cotizador
 })();
 </script>
 </body>
