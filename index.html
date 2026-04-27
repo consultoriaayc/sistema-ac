@@ -539,7 +539,7 @@ supa=supabase.createClient(SUPA_URL,SUPA_KEY);
     </div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
       <div class="save-ind" id="save-ind"><div class="save-dot"></div>
-    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.34</span><span id="save-txt">guardado</span></div>
+    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.41</span><span id="save-txt">guardado</span></div>
       <button onclick="exportarDatos()" style="padding:5px 12px;background:#059669;color:white;border:none;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Exportar</button>
       <label style="padding:5px 12px;background:#1e3a5f;color:white;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Importar<input type="file" id="import-file" accept=".json" style="display:none" onchange="importarDatos(this)"/></label>
       <div class="estado-badge">Morelos</div>
@@ -609,7 +609,6 @@ supa=supabase.createClient(SUPA_URL,SUPA_KEY);
       <button class="tab" onclick="selTab('permiso',this)" style="background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:10px 8px;cursor:pointer;text-align:center;transition:all .18s;box-shadow:var(--shadow);">
         <span style="font-size:18px;margin-bottom:3px;display:block;">🚛</span>
         <span style="font-size:12px;font-weight:600;color:var(--text);display:block;line-height:1.2;">Permiso</span>
-        <span style="font-size:10px;color:var(--text-3);margin-top:1px;display:block;">Carga</span>
       </button>
       <button class="tab" onclick="selTab('seguro',this)" style="background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:10px 8px;cursor:pointer;text-align:center;transition:all .18s;box-shadow:var(--shadow);">
         <span style="font-size:18px;margin-bottom:3px;display:block;">🛡️</span>
@@ -939,7 +938,7 @@ supa=supabase.createClient(SUPA_URL,SUPA_KEY);
       <div class="card">
         <div class="card-title">Datos del cliente</div>
         <div class="field"><label>Nombre del cliente</label><input type="text" id="circ-cliente" placeholder="Ej. Juan Pérez"/></div>
-        <div class="field"><label>Vehículo (opcional)</label><input type="text" id="circ-vehiculo" placeholder="Ej. Nissan Versa 2022"/></div>
+        <div class="field"><label>Empresa / tipo de cliente</label><select id="circ-empresa" onchange="calcCircular()"></select></div>
       </div>
       <div class="card">
         <div class="card-title">Conceptos</div>
@@ -1918,7 +1917,7 @@ async function cargarPrecios(){
 }
 function setSyncStatus(tipo,txt){const pill=document.getElementById('sync-pill');const span=document.getElementById('sync-txt');pill.className='sync-pill '+tipo;span.textContent=txt;}
 function poblarSelects(){
-  const ids=['alta-empresa','ref-empresa','cam-empresa','pla-empresa','baja-empresa','ver-empresa','per-empresa'];
+  const ids=['alta-empresa','ref-empresa','cam-empresa','pla-empresa','baja-empresa','ver-empresa','per-empresa','circ-empresa'];
   // Obtener empresas con precio especial del estado actual
   var empresasConPrecio=[];
   if(cotHonorarios.length){
@@ -2222,7 +2221,7 @@ function generarMensaje(){
   if(!desgloseData.total){mostrarError('Completa los datos del trámite para calcular la cotización.');return;}
   document.getElementById('gen-error').classList.add('hidden');
   const clienteMap={alta:'alta-cliente',refrendo:'ref-cliente',cambio:'cam-cliente',placas:'pla-cliente',baja:'baja-cliente',verif:'ver-cliente',permiso:'per-cliente'};
-  const empresaMap={alta:'alta-empresa',refrendo:'ref-empresa',cambio:'cam-empresa',placas:'pla-empresa',baja:'baja-empresa',verif:'ver-empresa',permiso:'per-empresa'};
+  const empresaMap={alta:'alta-empresa',refrendo:'ref-empresa',cambio:'cam-empresa',placas:'pla-empresa',baja:'baja-empresa',verif:'ver-empresa',permiso:'per-empresa',circular:'circ-empresa'};
   const facturaMap={alta:'alta-factura-chk',refrendo:'ref-factura-chk',cambio:'cam-factura-chk',placas:'pla-factura-chk',baja:'baja-factura-chk',verif:'ver-factura-chk',permiso:'per-factura-chk'};
   const cliente=document.getElementById(clienteMap[tramite])?.value?.trim()||'';
   const empresa=document.getElementById(empresaMap[tramite])?.value||'publico';
@@ -2670,7 +2669,6 @@ function toggleTipoPermiso(){
   if(tipo==='carga')calcPermiso(); else calcCircular();
 }
 function calcPermiso(){
-  if(!cotEstadoId){alert('Selecciona el estado primero.');return;}
   const empresa=document.getElementById('per-empresa')?.value||'publico';
   const idCliente=getEmpresaIdCliente();
   const factura=document.getElementById('per-factura-chk').checked;
@@ -2699,13 +2697,14 @@ function calcCircular(){
   const mensajeria=document.getElementById('circ-mensajeria-chk').checked;
   const mensajeriaWrap=document.getElementById('circ-mensajeria-wrap');
   const factura=document.getElementById('circ-factura-chk').checked;
+  const empresaCirc=document.getElementById('circ-empresa')?.value||'publico';
   if(mensajeriaWrap)mensajeriaWrap.style.display=mensajeria?'block':'none';
   const items=[];let total=0;let baseIva=0;
   if(permiso){items.push({label:'Permiso para circular',val:400});total+=400;baseIva+=400;}
   if(mensajeria){var monto=parseFloat(document.getElementById('circ-mensajeria-monto')?.value)||0;if(monto>0){items.push({label:'Mensajería',val:monto});total+=monto;baseIva+=monto;}}
   if(factura&&baseIva>0){const iva=Math.round(baseIva*0.16*100)/100;items.push({label:'IVA 16%',val:iva,esIva:true});total+=iva;}
   if(!items.length){document.getElementById('circ-desglose').innerHTML='<div style="color:#9ca3af;font-size:13px;text-align:center;padding:12px;">Selecciona al menos un concepto</div>';return;}
-  renderDesglose('circ-desglose',items,total,'publico');
+  renderDesglose('circ-desglose',items,total,empresaCirc);
 }
 
 // ── EXPORTAR / IMPORTAR ──
