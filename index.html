@@ -417,18 +417,18 @@ async function onCambioEstado(){
 
 
 function getHonorarioImporte(idTipoTramite, idEmpresa){
-  // Buscar honorario especial para la empresa
+  // Buscar honorario especial para la empresa (el más reciente)
   if(idEmpresa){
-    var hr=cotHonorarios.find(function(h){
+    var hrs=cotHonorarios.filter(function(h){
       return h.id_tipo_tramite===idTipoTramite && h.id_empresa===parseInt(idEmpresa);
-    });
-    if(hr)return parseFloat(hr.importe)||0;
+    }).sort(function(a,b){return (b.id_honorario||0)-(a.id_honorario||0);});
+    if(hrs.length)return parseFloat(hrs[0].importe)||0;
   }
-  // Buscar honorario publico general
-  var hrPublico=cotHonorarios.find(function(h){
+  // Buscar honorario publico general (el más reciente)
+  var pubs=cotHonorarios.filter(function(h){
     return h.id_tipo_tramite===idTipoTramite && !h.id_empresa && !h.id_cliente;
-  });
-  return hrPublico?parseFloat(hrPublico.importe)||0:0;
+  }).sort(function(a,b){return (b.id_honorario||0)-(a.id_honorario||0);});
+  return pubs.length?parseFloat(pubs[0].importe)||0:0;
 }
 
 function getConceptoImporte(concepto){
@@ -539,7 +539,7 @@ supa=supabase.createClient(SUPA_URL,SUPA_KEY);
     </div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
       <div class="save-ind" id="save-ind"><div class="save-dot"></div>
-    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.45</span><span id="save-txt">guardado</span></div>
+    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.46</span><span id="save-txt">guardado</span></div>
       <button onclick="exportarDatos()" style="padding:5px 12px;background:#059669;color:white;border:none;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Exportar</button>
       <label style="padding:5px 12px;background:#1e3a5f;color:white;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Importar<input type="file" id="import-file" accept=".json" style="display:none" onchange="importarDatos(this)"/></label>
       <div class="estado-badge">Morelos</div>
@@ -1749,7 +1749,7 @@ function renderTarifas(){
     // Público general
     var honPub=cotHonorarios.find(function(h){return h.id_tipo_tramite===tr.id&&!h.id_empresa&&!h.id_cliente;});
     var valPub=honPub?honPub.importe:'';
-    var idPub=honPub?honPub.id:'';
+    var idPub=honPub?honPub.id_honorario:'';
     tbHtml+='<td style="padding:4px 6px;border:1px solid var(--border);text-align:center;background:'+bg+';">'
       +'<input type="number" value="'+valPub+'" data-tramite="'+tr.id+'" data-empresa="" data-id="'+idPub+'" onchange="guardarTarifa(this)" '
       +'style="width:90px;padding:6px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:13px;text-align:center;font-family:Inter,sans-serif;background:white;"/>'
@@ -1758,7 +1758,7 @@ function renderTarifas(){
     tarifasEmpresas.forEach(function(e){
       var hon=cotHonorarios.find(function(h){return h.id_tipo_tramite===tr.id&&h.id_empresa===e.id_empresa;});
       var val=hon?hon.importe:'';
-      var hid=hon?hon.id:'';
+      var hid=hon?hon.id_honorario:'';
       tbHtml+='<td style="padding:4px 6px;border:1px solid var(--border);text-align:center;background:'+bg+';">'
         +'<input type="number" value="'+val+'" data-tramite="'+tr.id+'" data-empresa="'+e.id_empresa+'" data-id="'+hid+'" onchange="guardarTarifa(this)" '
         +'style="width:90px;padding:6px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:13px;text-align:center;font-family:Inter,sans-serif;background:white;"/>'
@@ -1772,7 +1772,7 @@ function renderTarifas(){
 async function guardarTarifa(input){
   var idTramite=parseInt(input.dataset.tramite);
   var idEmpresa=input.dataset.empresa?parseInt(input.dataset.empresa):null;
-  var idHonorario=input.dataset.id?parseInt(input.dataset.id):null;
+  var idHonorario=input.dataset.id?parseInt(input.dataset.id):null; // id_honorario de Supabase
   var importe=parseFloat(input.value)||0;
   var sync=document.getElementById('tarifas-sync');
 
@@ -1784,18 +1784,18 @@ async function guardarTarifa(input){
     if(idEmpresa)payload.id_empresa=idEmpresa;
     var res;
     if(idHonorario){
-      res=await supa.from('honorarios').update({importe:importe}).eq('id',idHonorario);
+      res=await supa.from('honorarios').update({importe:importe}).eq('id_honorario',idHonorario);
     } else {
       res=await supa.from('honorarios').insert([payload]).select();
-      if(res.data&&res.data[0])input.dataset.id=res.data[0].id;
+      if(res.data&&res.data[0])input.dataset.id=res.data[0].id_honorario;
     }
     if(res.error)throw res.error;
     // Actualizar cotHonorarios en memoria
     if(idHonorario){
-      var idx=cotHonorarios.findIndex(function(h){return h.id===idHonorario;});
+      var idx=cotHonorarios.findIndex(function(h){return h.id_honorario===idHonorario;});
       if(idx>=0)cotHonorarios[idx].importe=importe;
     } else {
-      var nuevoH={id:res.data&&res.data[0]?res.data[0].id:null,id_tipo_tramite:idTramite,id_empresa:idEmpresa,id_estado_op:cotEstadoId||1,importe:importe};
+      var nuevoH={id_honorario:res.data&&res.data[0]?res.data[0].id_honorario:null,id_tipo_tramite:idTramite,id_empresa:idEmpresa,id_estado_op:cotEstadoId||1,importe:importe};
       cotHonorarios.push(nuevoH);
     }
     input.style.borderColor='#10b981';
@@ -4370,18 +4370,18 @@ async function onCambioEstado(){
 
 
 function getHonorarioImporte(idTipoTramite, idEmpresa){
-  // Buscar honorario especial para la empresa
+  // Buscar honorario especial para la empresa (el más reciente)
   if(idEmpresa){
-    var hr=cotHonorarios.find(function(h){
+    var hrs=cotHonorarios.filter(function(h){
       return h.id_tipo_tramite===idTipoTramite && h.id_empresa===parseInt(idEmpresa);
-    });
-    if(hr)return parseFloat(hr.importe)||0;
+    }).sort(function(a,b){return (b.id_honorario||0)-(a.id_honorario||0);});
+    if(hrs.length)return parseFloat(hrs[0].importe)||0;
   }
-  // Buscar honorario publico general
-  var hrPublico=cotHonorarios.find(function(h){
+  // Buscar honorario publico general (el más reciente)
+  var pubs=cotHonorarios.filter(function(h){
     return h.id_tipo_tramite===idTipoTramite && !h.id_empresa && !h.id_cliente;
-  });
-  return hrPublico?parseFloat(hrPublico.importe)||0:0;
+  }).sort(function(a,b){return (b.id_honorario||0)-(a.id_honorario||0);});
+  return pubs.length?parseFloat(pubs[0].importe)||0:0;
 }
 
 function getConceptoImporte(concepto){
