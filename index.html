@@ -539,7 +539,7 @@ supa=supabase.createClient(SUPA_URL,SUPA_KEY);
     </div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
       <div class="save-ind" id="save-ind"><div class="save-dot"></div>
-    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.48</span><span id="save-txt">guardado</span></div>
+    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.49</span><span id="save-txt">guardado</span></div>
       <button onclick="exportarDatos()" style="padding:5px 12px;background:#059669;color:white;border:none;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Exportar</button>
       <label style="padding:5px 12px;background:#1e3a5f;color:white;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Importar<input type="file" id="import-file" accept=".json" style="display:none" onchange="importarDatos(this)"/></label>
       <div class="estado-badge">Morelos</div>
@@ -2336,8 +2336,9 @@ function generarMensaje(){
   document.getElementById('gen-error').classList.add('hidden');
   const clienteMap={alta:'alta-cliente',refrendo:'ref-cliente',cambio:'cam-cliente',placas:'pla-cliente',baja:'baja-cliente',verif:'ver-cliente',permiso:'per-cliente'};
   const empresaMap={alta:'alta-empresa',refrendo:'ref-empresa',cambio:'cam-empresa',placas:'pla-empresa',baja:'baja-empresa',verif:'ver-empresa',permiso:'per-empresa',circular:'circ-empresa'};
-  const facturaMap={alta:'alta-factura-chk',refrendo:'ref-factura-chk',cambio:'cam-factura-chk',placas:'pla-factura-chk',baja:'baja-factura-chk',verif:'ver-factura-chk',permiso:'per-factura-chk'};
-  const cliente=document.getElementById(clienteMap[tramite])?.value?.trim()||'';
+  const facturaMap={alta:'alta-factura-chk',refrendo:'ref-factura-chk',cambio:'cam-factura-chk',placas:'pla-factura-chk',baja:'baja-factura-chk',verif:'ver-factura-chk',permiso:'per-factura-chk',circular:'circ-factura-chk'};
+  var _subtipoP=tramite==='permiso'?(document.querySelector('input[name="per-tipo-principal"]:checked')?.value||'carga'):''; 
+  const cliente=_subtipoP==='circular'?(document.getElementById('circ-cliente')?.value?.trim()||''):(document.getElementById(clienteMap[tramite])?.value?.trim()||'');
   const empresa=document.getElementById(empresaMap[tramite])?.value||'publico';
   const conFactura=document.getElementById(facturaMap[tramite])?.checked||false;
   let nombreTramite='';
