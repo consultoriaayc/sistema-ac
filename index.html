@@ -539,7 +539,7 @@ supa=supabase.createClient(SUPA_URL,SUPA_KEY);
     </div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
       <div class="save-ind" id="save-ind"><div class="save-dot"></div>
-    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.43</span><span id="save-txt">guardado</span></div>
+    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.44</span><span id="save-txt">guardado</span></div>
       <button onclick="exportarDatos()" style="padding:5px 12px;background:#059669;color:white;border:none;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Exportar</button>
       <label style="padding:5px 12px;background:#1e3a5f;color:white;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Importar<input type="file" id="import-file" accept=".json" style="display:none" onchange="importarDatos(this)"/></label>
       <div class="estado-badge">Morelos</div>
@@ -556,6 +556,7 @@ supa=supabase.createClient(SUPA_URL,SUPA_KEY);
     <button class="nav-tab" id="nav-finanzas" onclick="showView('finanzas')">💰 Finanzas</button>
     <button class="nav-tab" id="nav-clientes" onclick="showView('clientes')">👥 Clientes</button>
     <button class="nav-tab" id="nav-vehiculos" onclick="showView('vehiculos')">🚗 Vehículos</button>
+    <button class="nav-tab" id="nav-tarifas" onclick="showView('tarifas')">💲 Tarifas</button>
   </div>
 </div>
 
@@ -1699,6 +1700,115 @@ async function cloudLoad(){
   poblarMeses();
   poblarSelects();
 }
+// ════════════════════════════════════════
+// MÓDULO TARIFAS
+// ════════════════════════════════════════
+var tarifasData=[];
+var tarifasEmpresas=[];
+var tarifasSyncTimer=null;
+
+var TRAMITES_TARIFAS=[
+  {id:1,nombre:'Alta de auto nuevo'},
+  {id:2,nombre:'Alta seminuevo'},
+  {id:3,nombre:'Alta foráneo'},
+  {id:4,nombre:'Refrendo / tenencia'},
+  {id:5,nombre:'Cambio de propietario'},
+  {id:7,nombre:'Reposición de placas'},
+  {id:8,nombre:'Baja definitiva'},
+  {id:9,nombre:'Verificación vehicular'},
+  {id:10,nombre:'Permiso de carga'},
+  {id:11,nombre:'Revista mecánica'},
+  {id:12,nombre:'Revista mecánica S/Presentar'}
+];
+
+function renderTarifas(){
+  // Obtener empresas únicas con precio especial
+  var empIds=[...new Set(cotHonorarios.filter(function(h){return h.id_empresa;}).map(function(h){return h.id_empresa;}))];
+  tarifasEmpresas=catEmpresas.filter(function(e){return empIds.includes(e.id_empresa);});
+
+  // Construir encabezado
+  var thead=document.getElementById('tarifas-thead');
+  var tbody=document.getElementById('tarifas-tbody');
+  if(!thead||!tbody)return;
+
+  var thHtml='<tr style="background:var(--accent-light);">'
+    +'<th style="text-align:left;padding:10px 12px;font-size:12px;color:var(--text);font-weight:700;border:1px solid var(--border);min-width:180px;position:sticky;left:0;background:var(--accent-light);z-index:2;">Trámite</th>'
+    +'<th style="text-align:center;padding:10px 12px;font-size:12px;color:var(--text);font-weight:700;border:1px solid var(--border);min-width:110px;">Público General</th>';
+  tarifasEmpresas.forEach(function(e){
+    thHtml+='<th style="text-align:center;padding:10px 12px;font-size:12px;color:var(--text);font-weight:700;border:1px solid var(--border);min-width:110px;">'+e.nombre+'</th>';
+  });
+  thHtml+='</tr>';
+  thead.innerHTML=thHtml;
+
+  // Construir filas
+  var tbHtml='';
+  TRAMITES_TARIFAS.forEach(function(tr,idx){
+    var bg=idx%2===0?'var(--card)':'var(--bg)';
+    tbHtml+='<tr>';
+    tbHtml+='<td style="padding:8px 12px;border:1px solid var(--border);font-weight:600;color:var(--text);background:'+bg+';position:sticky;left:0;z-index:1;">'+tr.nombre+'</td>';
+    // Público general
+    var honPub=cotHonorarios.find(function(h){return h.id_tipo_tramite===tr.id&&!h.id_empresa&&!h.id_cliente;});
+    var valPub=honPub?honPub.importe:'';
+    var idPub=honPub?honPub.id:'';
+    tbHtml+='<td style="padding:4px 6px;border:1px solid var(--border);text-align:center;background:'+bg+';">'
+      +'<input type="number" value="'+valPub+'" data-tramite="'+tr.id+'" data-empresa="" data-id="'+idPub+'" onchange="guardarTarifa(this)" '
+      +'style="width:90px;padding:6px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:13px;text-align:center;font-family:Inter,sans-serif;background:white;"/>'
+      +'</td>';
+    // Empresas
+    tarifasEmpresas.forEach(function(e){
+      var hon=cotHonorarios.find(function(h){return h.id_tipo_tramite===tr.id&&h.id_empresa===e.id_empresa;});
+      var val=hon?hon.importe:'';
+      var hid=hon?hon.id:'';
+      tbHtml+='<td style="padding:4px 6px;border:1px solid var(--border);text-align:center;background:'+bg+';">'
+        +'<input type="number" value="'+val+'" data-tramite="'+tr.id+'" data-empresa="'+e.id_empresa+'" data-id="'+hid+'" onchange="guardarTarifa(this)" '
+        +'style="width:90px;padding:6px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:13px;text-align:center;font-family:Inter,sans-serif;background:white;"/>'
+        +'</td>';
+    });
+    tbHtml+='</tr>';
+  });
+  tbody.innerHTML=tbHtml;
+}
+
+async function guardarTarifa(input){
+  var idTramite=parseInt(input.dataset.tramite);
+  var idEmpresa=input.dataset.empresa?parseInt(input.dataset.empresa):null;
+  var idHonorario=input.dataset.id?parseInt(input.dataset.id):null;
+  var importe=parseFloat(input.value)||0;
+  var sync=document.getElementById('tarifas-sync');
+
+  input.style.borderColor='#f59e0b';
+  if(sync){sync.textContent='💾 Guardando...';sync.style.display='block';sync.style.color='#f59e0b';}
+
+  try{
+    var payload={id_tipo_tramite:idTramite,id_estado_op:cotEstadoId||1,importe:importe};
+    if(idEmpresa)payload.id_empresa=idEmpresa;
+    var res;
+    if(idHonorario){
+      res=await supa.from('honorarios').update({importe:importe}).eq('id',idHonorario);
+    } else {
+      res=await supa.from('honorarios').insert([payload]).select();
+      if(res.data&&res.data[0])input.dataset.id=res.data[0].id;
+    }
+    if(res.error)throw res.error;
+    // Actualizar cotHonorarios en memoria
+    if(idHonorario){
+      var idx=cotHonorarios.findIndex(function(h){return h.id===idHonorario;});
+      if(idx>=0)cotHonorarios[idx].importe=importe;
+    } else {
+      var nuevoH={id:res.data&&res.data[0]?res.data[0].id:null,id_tipo_tramite:idTramite,id_empresa:idEmpresa,id_estado_op:cotEstadoId||1,importe:importe};
+      cotHonorarios.push(nuevoH);
+    }
+    input.style.borderColor='#10b981';
+    if(sync){sync.textContent='✅ Guardado';sync.style.color='#10b981';}
+    if(tarifasSyncTimer)clearTimeout(tarifasSyncTimer);
+    tarifasSyncTimer=setTimeout(function(){if(sync)sync.style.display='none';input.style.borderColor='var(--border)';},2000);
+  }catch(e){
+    console.error('Error guardando tarifa:',e);
+    input.style.borderColor='#ef4444';
+    if(sync){sync.textContent='❌ Error al guardar';sync.style.color='#ef4444';}
+  }
+}
+
 async function cloudSave(){
   setSaveInd('saving');
   try{
@@ -1755,7 +1865,7 @@ function fD(ts){return new Date(ts).toLocaleDateString('es-MX',{day:'2-digit',mo
 
 // ── NAV ──
 function showView(v){
-  ['cotizador','seguimiento','tablero','finanzas','clientes','vehiculos'].forEach(x=>{
+  ['cotizador','seguimiento','tablero','finanzas','clientes','vehiculos','tarifas'].forEach(x=>{
     document.getElementById('view-'+x).style.display=x===v?'block':'none';
     document.getElementById('nav-'+x).classList.toggle('active',x===v);
   });
@@ -1764,6 +1874,7 @@ function showView(v){
   if(v==='finanzas') renderFinanzas();
   if(v==='clientes') renderClientes();
   if(v==='vehiculos') renderVehiculos();
+  if(v==='tarifas') renderTarifas();
 }
 
 function updateBadges(){
@@ -4362,5 +4473,24 @@ supa=supabase.createClient(SUPA_URL,SUPA_KEY);
   poblarSelects(); // empresas en cotizador
 })();
 </script>
+<div id="view-tarifas" class="main" style="display:none;">
+  <div style="padding:16px 16px 0;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <div>
+        <div style="font-size:20px;font-weight:800;color:var(--text);">💲 Tarifas y Descuentos</div>
+        <div style="font-size:13px;color:var(--text-2);margin-top:2px;">Edita un precio y se guarda automáticamente en Supabase</div>
+      </div>
+      <div id="tarifas-sync" style="font-size:12px;color:#10b981;font-weight:600;display:none;">✅ Guardado</div>
+    </div>
+    <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
+      <table id="tarifas-table" style="width:100%;border-collapse:collapse;font-size:13px;min-width:700px;">
+        <thead id="tarifas-thead"></thead>
+        <tbody id="tarifas-tbody"></tbody>
+      </table>
+    </div>
+    <div style="margin-top:12px;font-size:11px;color:var(--text-3);">— Sin precio especial usa el precio de Público General</div>
+  </div>
+</div>
+
 </body>
 </html>
