@@ -539,7 +539,7 @@ supa=supabase.createClient(SUPA_URL,SUPA_KEY);
     </div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
       <div class="save-ind" id="save-ind"><div class="save-dot"></div>
-    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.47</span><span id="save-txt">guardado</span></div>
+    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.48</span><span id="save-txt">guardado</span></div>
       <button onclick="exportarDatos()" style="padding:5px 12px;background:#059669;color:white;border:none;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Exportar</button>
       <label style="padding:5px 12px;background:#1e3a5f;color:white;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Importar<input type="file" id="import-file" accept=".json" style="display:none" onchange="importarDatos(this)"/></label>
       <div class="estado-badge">Morelos</div>
@@ -2072,9 +2072,10 @@ function renderDesglose(containerId,items,total,empresa){
     html+='<div class="empresa-badge">🏢 Precio especial: '+nombre+'</div>';
   }
   const clienteMap={alta:'alta-cliente',refrendo:'ref-cliente',cambio:'cam-cliente',placas:'pla-cliente',baja:'baja-cliente',verif:'ver-cliente',permiso:'per-cliente'};
-  const tramiteNombres={alta:'Alta de vehiculo',refrendo:'Refrendo / tenencia',cambio:'Cambio de propietario',placas:'Reposicion de placas',baja:'Baja definitiva',verif:'Verificacion vehicular',permiso:'Permiso'};
+  const tramiteNombres={alta:'Alta de vehiculo',refrendo:'Refrendo / tenencia',cambio:'Cambio de propietario',placas:'Reposicion de placas',baja:'Baja definitiva',verif:'Verificacion vehicular'};
   var _cMapKey=tramite;if(tramite==='permiso'&&(document.querySelector('input[name="per-tipo-principal"]:checked')?.value||'carga')==='circular')_cMapKey='_circ';var clienteVal=_cMapKey==='_circ'?(document.getElementById('circ-cliente')?.value?.trim()||''):(tramite&&clienteMap[tramite]?document.getElementById(clienteMap[tramite])?.value?.trim():'');
-  const tramiteVal=tramite&&tramiteNombres[tramite]?tramiteNombres[tramite]:'';
+  var tramiteVal='';
+  if(tramite==='permiso'){var _subp=document.querySelector('input[name="per-tipo-principal"]:checked')?.value||'carga';var _chkC=document.getElementById('per-chk-carga')?.checked;var _chkR=document.getElementById('per-chk-revista')?.checked;var _chkS=document.getElementById('per-chk-revista-sp')?.checked;var _partes=[];if(_subp==='circular'){_partes=['Permiso para circular'];}else{if(_chkC)_partes.push('Permiso de Carga');if(_chkR)_partes.push('Revista Mecánica');if(_chkS)_partes.push('Revista Mec. S/Presentar');}tramiteVal=_partes.join(' + ')||'Permiso';}else{tramiteVal=tramite&&tramiteNombres[tramite]?tramiteNombres[tramite]:'';}  
   html+='<div class="desglose">';
   // Folio: tomar el ultimo folio generado o generar preview
   var folioPreview=generarFolio();
