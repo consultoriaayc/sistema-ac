@@ -539,7 +539,7 @@ supa=supabase.createClient(SUPA_URL,SUPA_KEY);
     </div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
       <div class="save-ind" id="save-ind"><div class="save-dot"></div>
-    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.49</span><span id="save-txt">guardado</span></div>
+    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.51</span><span id="save-txt">guardado</span></div>
       <button onclick="exportarDatos()" style="padding:5px 12px;background:#059669;color:white;border:none;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Exportar</button>
       <label style="padding:5px 12px;background:#1e3a5f;color:white;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Importar<input type="file" id="import-file" accept=".json" style="display:none" onchange="importarDatos(this)"/></label>
       <div class="estado-badge">Morelos</div>
@@ -556,7 +556,7 @@ supa=supabase.createClient(SUPA_URL,SUPA_KEY);
     <button class="nav-tab" id="nav-finanzas" onclick="showView('finanzas')">💰 Finanzas</button>
     <button class="nav-tab" id="nav-clientes" onclick="showView('clientes')">👥 Clientes</button>
     <button class="nav-tab" id="nav-vehiculos" onclick="showView('vehiculos')">🚗 Vehículos</button>
-    <button class="nav-tab" id="nav-tarifas" onclick="showView('tarifas')">💲 Tarifas</button>
+    <button class="nav-tab" id="nav-admin" onclick="showView('admin')">⚙️ Admin</button>
   </div>
 </div>
 
@@ -1701,12 +1701,65 @@ async function cloudLoad(){
   poblarSelects();
 }
 // ════════════════════════════════════════
-// MÓDULO TARIFAS
+// MÓDULO ADMINISTRACIÓN
 // ════════════════════════════════════════
-var tarifasData=[];
-var tarifasEmpresas=[];
-var tarifasSyncTimer=null;
+var adminTabActual='honorarios';
+var adminEstadoId=null;
+var adminSyncTimer=null;
+var cotDerechos=[];
 
+async function renderAdmin(){
+  // Poblar selector de estados
+  var sel=document.getElementById('admin-estado');
+  if(sel){
+    // Si cotEstados no cargó aún, consultarlo
+    if(!cotEstados.length){
+      var res=await supa.from('estados_operacion').select('*').eq('activo',true);
+      cotEstados=res.data||[];
+    }
+    if(cotEstados.length){
+      sel.innerHTML=cotEstados.map(function(e){return '<option value="'+e.id_estado_op+'">'+e.estado+'</option>';}).join('');
+      if(!adminEstadoId)adminEstadoId=cotEstadoId||cotEstados[0].id_estado_op;
+      sel.value=adminEstadoId;
+    }
+    // Si cotHonorarios no cargó, cargarlo
+    if(!cotHonorarios.length&&adminEstadoId){
+      var rh=await supa.from('honorarios').select('*').eq('id_estado_op',adminEstadoId);
+      cotHonorarios=rh.data||[];
+    }
+  }
+  showAdminTab(adminTabActual);
+}
+
+function onAdminEstado(){
+  var sel=document.getElementById('admin-estado');
+  adminEstadoId=parseInt(sel.value)||cotEstadoId;
+  showAdminTab(adminTabActual);
+}
+
+function showAdminTab(tab){
+  adminTabActual=tab;
+  var tabs=['honorarios','derechos','empresas'];
+  tabs.forEach(function(t){
+    var btn=document.getElementById('admin-tab-'+t);
+    var panel=document.getElementById('admin-panel-'+t);
+    if(btn){btn.style.color=t===tab?'var(--accent-text)':'var(--text-2)';btn.style.borderBottomColor=t===tab?'var(--accent)':'transparent';}
+    if(panel)panel.style.display=t===tab?'block':'none';
+  });
+  if(tab==='honorarios')renderTarifas();
+  if(tab==='derechos')renderDerechosAdmin();
+  if(tab==='empresas')renderEmpresasAdmin();
+}
+
+function adminSyncMsg(msg,color){
+  var sync=document.getElementById('admin-sync');
+  if(!sync)return;
+  sync.textContent=msg;sync.style.color=color;sync.style.display='block';
+  if(adminSyncTimer)clearTimeout(adminSyncTimer);
+  adminSyncTimer=setTimeout(function(){sync.style.display='none';},2000);
+}
+
+// ── HONORARIOS ──
 var TRAMITES_TARIFAS=[
   {id:1,nombre:'Alta de auto nuevo'},
   {id:2,nombre:'Alta seminuevo'},
@@ -1716,21 +1769,17 @@ var TRAMITES_TARIFAS=[
   {id:7,nombre:'Reposición de placas'},
   {id:8,nombre:'Baja definitiva'},
   {id:9,nombre:'Verificación vehicular'},
-  {id:10,nombre:'Permiso de carga'},
+  {id:10,nombre:'Permiso de Carga'},
   {id:11,nombre:'Revista mecánica'},
   {id:12,nombre:'Revista mecánica S/Presentar'}
 ];
 
 function renderTarifas(){
-  // Obtener empresas únicas con precio especial
   var empIds=[...new Set(cotHonorarios.filter(function(h){return h.id_empresa;}).map(function(h){return h.id_empresa;}))];
   tarifasEmpresas=catEmpresas.filter(function(e){return empIds.includes(e.id_empresa);});
-
-  // Construir encabezado
   var thead=document.getElementById('tarifas-thead');
   var tbody=document.getElementById('tarifas-tbody');
   if(!thead||!tbody)return;
-
   var thHtml='<tr style="background:var(--accent-light);">'
     +'<th style="text-align:left;padding:10px 12px;font-size:12px;color:var(--text);font-weight:700;border:1px solid var(--border);min-width:180px;position:sticky;left:0;background:var(--accent-light);z-index:2;">Trámite</th>'
     +'<th style="text-align:center;padding:10px 12px;font-size:12px;color:var(--text);font-weight:700;border:1px solid var(--border);min-width:110px;">Público General</th>';
@@ -1739,26 +1788,21 @@ function renderTarifas(){
   });
   thHtml+='</tr>';
   thead.innerHTML=thHtml;
-
-  // Construir filas
   var tbHtml='';
   TRAMITES_TARIFAS.forEach(function(tr,idx){
     var bg=idx%2===0?'var(--card)':'var(--bg)';
     tbHtml+='<tr>';
     tbHtml+='<td style="padding:8px 12px;border:1px solid var(--border);font-weight:600;color:var(--text);background:'+bg+';position:sticky;left:0;z-index:1;">'+tr.nombre+'</td>';
-    // Público general
-    var honPub=cotHonorarios.find(function(h){return h.id_tipo_tramite===tr.id&&!h.id_empresa&&!h.id_cliente;});
-    var valPub=honPub?honPub.importe:'';
-    var idPub=honPub?honPub.id_honorario:'';
+    var pubs=cotHonorarios.filter(function(h){return h.id_tipo_tramite===tr.id&&!h.id_empresa&&!h.id_cliente;}).sort(function(a,b){return (b.id_honorario||0)-(a.id_honorario||0);});
+    var honPub=pubs[0];
+    var valPub=honPub?honPub.importe:'';var idPub=honPub?honPub.id_honorario:'';
     tbHtml+='<td style="padding:4px 6px;border:1px solid var(--border);text-align:center;background:'+bg+';">'
       +'<input type="number" value="'+valPub+'" data-tramite="'+tr.id+'" data-empresa="" data-id="'+idPub+'" onchange="guardarTarifa(this)" '
       +'style="width:90px;padding:6px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:13px;text-align:center;font-family:Inter,sans-serif;background:white;"/>'
       +'</td>';
-    // Empresas
     tarifasEmpresas.forEach(function(e){
-      var hon=cotHonorarios.find(function(h){return h.id_tipo_tramite===tr.id&&h.id_empresa===e.id_empresa;});
-      var val=hon?hon.importe:'';
-      var hid=hon?hon.id_honorario:'';
+      var hrs=cotHonorarios.filter(function(h){return h.id_tipo_tramite===tr.id&&h.id_empresa===e.id_empresa;}).sort(function(a,b){return (b.id_honorario||0)-(a.id_honorario||0);});
+      var hon=hrs[0];var val=hon?hon.importe:'';var hid=hon?hon.id_honorario:'';
       tbHtml+='<td style="padding:4px 6px;border:1px solid var(--border);text-align:center;background:'+bg+';">'
         +'<input type="number" value="'+val+'" data-tramite="'+tr.id+'" data-empresa="'+e.id_empresa+'" data-id="'+hid+'" onchange="guardarTarifa(this)" '
         +'style="width:90px;padding:6px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:13px;text-align:center;font-family:Inter,sans-serif;background:white;"/>'
@@ -1772,15 +1816,12 @@ function renderTarifas(){
 async function guardarTarifa(input){
   var idTramite=parseInt(input.dataset.tramite);
   var idEmpresa=input.dataset.empresa?parseInt(input.dataset.empresa):null;
-  var idHonorario=input.dataset.id?parseInt(input.dataset.id):null; // id_honorario de Supabase
+  var idHonorario=input.dataset.id?parseInt(input.dataset.id):null;
   var importe=parseFloat(input.value)||0;
-  var sync=document.getElementById('tarifas-sync');
-
   input.style.borderColor='#f59e0b';
-  if(sync){sync.textContent='💾 Guardando...';sync.style.display='block';sync.style.color='#f59e0b';}
-
+  adminSyncMsg('💾 Guardando...','#f59e0b');
   try{
-    var payload={id_tipo_tramite:idTramite,id_estado_op:cotEstadoId||1,importe:importe};
+    var payload={id_tipo_tramite:idTramite,id_estado_op:adminEstadoId||cotEstadoId||1,importe:importe};
     if(idEmpresa)payload.id_empresa=idEmpresa;
     var res;
     if(idHonorario){
@@ -1790,23 +1831,135 @@ async function guardarTarifa(input){
       if(res.data&&res.data[0])input.dataset.id=res.data[0].id_honorario;
     }
     if(res.error)throw res.error;
-    // Actualizar cotHonorarios en memoria
-    if(idHonorario){
-      var idx=cotHonorarios.findIndex(function(h){return h.id_honorario===idHonorario;});
-      if(idx>=0)cotHonorarios[idx].importe=importe;
-    } else {
-      var nuevoH={id_honorario:res.data&&res.data[0]?res.data[0].id_honorario:null,id_tipo_tramite:idTramite,id_empresa:idEmpresa,id_estado_op:cotEstadoId||1,importe:importe};
-      cotHonorarios.push(nuevoH);
-    }
+    if(idHonorario){var idx=cotHonorarios.findIndex(function(h){return h.id_honorario===idHonorario;});if(idx>=0)cotHonorarios[idx].importe=importe;}
+    else{var nuevoH={id_honorario:res.data&&res.data[0]?res.data[0].id_honorario:null,id_tipo_tramite:idTramite,id_empresa:idEmpresa,id_estado_op:adminEstadoId||cotEstadoId||1,importe:importe};cotHonorarios.push(nuevoH);}
     input.style.borderColor='#10b981';
-    if(sync){sync.textContent='✅ Guardado';sync.style.color='#10b981';}
-    if(tarifasSyncTimer)clearTimeout(tarifasSyncTimer);
-    tarifasSyncTimer=setTimeout(function(){if(sync)sync.style.display='none';input.style.borderColor='var(--border)';},2000);
+    adminSyncMsg('✅ Guardado','#10b981');
+    setTimeout(function(){input.style.borderColor='var(--border)';},2000);
     if(typeof recalcularTramiteActivo==='function')recalcularTramiteActivo();
   }catch(e){
     console.error('Error guardando tarifa:',e);
     input.style.borderColor='#ef4444';
-    if(sync){sync.textContent='❌ Error al guardar';sync.style.color='#ef4444';}
+    adminSyncMsg('❌ Error al guardar','#ef4444');
+  }
+}
+
+// ── DERECHOS ──
+async function renderDerechosAdmin(){
+  var tbody=document.getElementById('derechos-tbody');
+  if(!tbody)return;
+  adminSyncMsg('Cargando...','#9ca3af');
+  var res=await supa.from('derechos').select('*').eq('id_estado_op',adminEstadoId||cotEstadoId||1).order('id_derecho');
+  if(res.error){adminSyncMsg('❌ Error al cargar','#ef4444');return;}
+  cotDerechos=res.data||[];
+  var html='';
+  cotDerechos.forEach(function(d,idx){
+    var bg=idx%2===0?'var(--card)':'var(--bg)';
+    var tipNombre='';
+    if(d.id_tipo_placa){var tip=catTiposPlaca.find(function(t){return t.id_tipo===d.id_tipo_placa;});tipNombre=tip?tip.tipo:d.id_tipo_placa;}
+    html+='<tr>'
+      +'<td style="padding:8px 12px;border:1px solid var(--border);font-weight:600;color:var(--text);background:'+bg+';position:sticky;left:0;">'+d.concepto+'</td>'
+      +'<td style="padding:8px 12px;border:1px solid var(--border);text-align:center;background:'+bg+';color:var(--text-2);font-size:12px;">'+tipNombre+'</td>'
+      +'<td style="padding:4px 6px;border:1px solid var(--border);text-align:center;background:'+bg+';">'
+        +'<input type="number" value="'+d.importe+'" data-id="'+d.id_derecho+'" onchange="guardarDerecho(this)" '
+        +'style="width:100px;padding:6px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:13px;text-align:center;font-family:Inter,sans-serif;background:white;"/>'
+      +'</td>'
+      +'<td style="padding:8px 12px;border:1px solid var(--border);text-align:center;background:'+bg+';">'
+        +'<label class="switch" style="transform:scale(0.8);"><input type="checkbox"'+(d.activo?' checked':'')+' data-id="'+d.id_derecho+'" onchange="toggleDerecho(this)"/><span class="slider"></span></label>'
+      +'</td>'
+      +'</tr>';
+  });
+  tbody.innerHTML=html;
+  document.getElementById('admin-sync').style.display='none';
+}
+
+async function guardarDerecho(input){
+  var idDerecho=parseInt(input.dataset.id);
+  var importe=parseFloat(input.value)||0;
+  input.style.borderColor='#f59e0b';
+  adminSyncMsg('💾 Guardando...','#f59e0b');
+  try{
+    var res=await supa.from('derechos').update({importe:importe}).eq('id_derecho',idDerecho);
+    if(res.error)throw res.error;
+    var idx=cotDerechos.findIndex(function(d){return d.id_derecho===idDerecho;});
+    if(idx>=0)cotDerechos[idx].importe=importe;
+    // Actualizar cotConceptos en memoria también
+    var d=cotDerechos[idx];
+    if(d){var cc=cotConceptos||[];cc.forEach(function(c){if(c.id_derecho===idDerecho)c.importe=importe;});}
+    input.style.borderColor='#10b981';
+    adminSyncMsg('✅ Guardado','#10b981');
+    setTimeout(function(){input.style.borderColor='var(--border)';},2000);
+  }catch(e){
+    console.error('Error guardando derecho:',e);
+    input.style.borderColor='#ef4444';
+    adminSyncMsg('❌ Error al guardar','#ef4444');
+  }
+}
+
+async function toggleDerecho(input){
+  var idDerecho=parseInt(input.dataset.id);
+  var activo=input.checked;
+  adminSyncMsg('💾 Guardando...','#f59e0b');
+  try{
+    var res=await supa.from('derechos').update({activo:activo}).eq('id_derecho',idDerecho);
+    if(res.error)throw res.error;
+    adminSyncMsg('✅ Guardado','#10b981');
+  }catch(e){
+    console.error(e);input.checked=!activo;
+    adminSyncMsg('❌ Error','#ef4444');
+  }
+}
+
+// ── EMPRESAS ──
+function renderEmpresasAdmin(){
+  var tbody=document.getElementById('empresas-tbody');
+  if(!tbody)return;
+  var html='';
+  catEmpresas.forEach(function(e,idx){
+    var bg=idx%2===0?'var(--card)':'var(--bg)';
+    html+='<tr>'
+      +'<td style="padding:6px 8px;border:1px solid var(--border);background:'+bg+';">'
+        +'<input type="text" value="'+e.nombre+'" data-id="'+e.id_empresa+'" onchange="guardarEmpresa(this)" '
+        +'style="width:100%;padding:6px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:13px;font-family:Inter,sans-serif;background:white;"/>'
+      +'</td>'
+      +'<td style="padding:8px 12px;border:1px solid var(--border);text-align:center;background:'+bg+';">✅</td>'
+      +'</tr>';
+  });
+  tbody.innerHTML=html;
+}
+
+async function guardarEmpresa(input){
+  var idEmpresa=parseInt(input.dataset.id);
+  var nombre=input.value.trim();
+  if(!nombre)return;
+  input.style.borderColor='#f59e0b';
+  adminSyncMsg('💾 Guardando...','#f59e0b');
+  try{
+    var res=await supa.from('empresas').update({nombre:nombre}).eq('id_empresa',idEmpresa);
+    if(res.error)throw res.error;
+    var idx=catEmpresas.findIndex(function(e){return e.id_empresa===idEmpresa;});
+    if(idx>=0)catEmpresas[idx].nombre=nombre;
+    input.style.borderColor='#10b981';
+    adminSyncMsg('✅ Guardado','#10b981');
+    setTimeout(function(){input.style.borderColor='var(--border)';},2000);
+  }catch(e){
+    console.error(e);input.style.borderColor='#ef4444';
+    adminSyncMsg('❌ Error al guardar','#ef4444');
+  }
+}
+
+async function agregarEmpresa(){
+  var nombre=prompt('Nombre de la nueva empresa:');
+  if(!nombre||!nombre.trim())return;
+  adminSyncMsg('💾 Guardando...','#f59e0b');
+  try{
+    var res=await supa.from('empresas').insert([{nombre:nombre.trim()}]).select();
+    if(res.error)throw res.error;
+    if(res.data&&res.data[0])catEmpresas.push(res.data[0]);
+    adminSyncMsg('✅ Empresa agregada','#10b981');
+    renderEmpresasAdmin();
+  }catch(e){
+    console.error(e);adminSyncMsg('❌ Error','#ef4444');
   }
 }
 
@@ -1866,7 +2019,7 @@ function fD(ts){return new Date(ts).toLocaleDateString('es-MX',{day:'2-digit',mo
 
 // ── NAV ──
 function showView(v){
-  ['cotizador','seguimiento','tablero','finanzas','clientes','vehiculos','tarifas'].forEach(x=>{
+  ['cotizador','seguimiento','tablero','finanzas','clientes','vehiculos','admin'].forEach(x=>{
     document.getElementById('view-'+x).style.display=x===v?'block':'none';
     document.getElementById('nav-'+x).classList.toggle('active',x===v);
   });
@@ -1875,7 +2028,7 @@ function showView(v){
   if(v==='finanzas') renderFinanzas();
   if(v==='clientes') renderClientes();
   if(v==='vehiculos') renderVehiculos();
-  if(v==='tarifas') renderTarifas();
+  if(v==='admin') renderAdmin();
 }
 
 function updateBadges(){
@@ -4476,22 +4629,70 @@ supa=supabase.createClient(SUPA_URL,SUPA_KEY);
   poblarSelects(); // empresas en cotizador
 })();
 </script>
-<div id="view-tarifas" class="main" style="display:none;">
+<div id="view-admin" class="main" style="display:none;">
   <div style="padding:16px 16px 0;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-      <div>
-        <div style="font-size:20px;font-weight:800;color:var(--text);">💲 Tarifas y Descuentos</div>
-        <div style="font-size:13px;color:var(--text-2);margin-top:2px;">Edita un precio y se guarda automáticamente en Supabase</div>
+    <div style="font-size:20px;font-weight:800;color:var(--text);margin-bottom:4px;">⚙️ Administración</div>
+    <div style="font-size:13px;color:var(--text-2);margin-bottom:16px;">Gestiona tarifas, derechos y empresas por estado</div>
+
+    <!-- Selector de estado -->
+    <div style="margin-bottom:16px;">
+      <label style="font-size:12px;font-weight:700;color:var(--text-2);display:block;margin-bottom:6px;">ESTADO</label>
+      <select id="admin-estado" onchange="onAdminEstado()" style="padding:10px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:Inter,sans-serif;background:var(--card);color:var(--text);width:100%;max-width:300px;"></select>
+    </div>
+
+    <!-- Tabs internos -->
+    <div style="display:flex;gap:8px;margin-bottom:16px;border-bottom:2px solid var(--border);padding-bottom:0;">
+      <button id="admin-tab-honorarios" onclick="showAdminTab('honorarios')" style="padding:10px 16px;font-size:13px;font-weight:700;border:none;background:none;cursor:pointer;color:var(--accent-text);border-bottom:3px solid var(--accent);margin-bottom:-2px;font-family:Inter,sans-serif;">💲 Honorarios</button>
+      <button id="admin-tab-derechos" onclick="showAdminTab('derechos')" style="padding:10px 16px;font-size:13px;font-weight:700;border:none;background:none;cursor:pointer;color:var(--text-2);border-bottom:3px solid transparent;margin-bottom:-2px;font-family:Inter,sans-serif;">📜 Derechos</button>
+      <button id="admin-tab-empresas" onclick="showAdminTab('empresas')" style="padding:10px 16px;font-size:13px;font-weight:700;border:none;background:none;cursor:pointer;color:var(--text-2);border-bottom:3px solid transparent;margin-bottom:-2px;font-family:Inter,sans-serif;">🏢 Empresas</button>
+    </div>
+
+    <!-- Indicador de guardado -->
+    <div id="admin-sync" style="font-size:12px;font-weight:600;margin-bottom:12px;display:none;">✅ Guardado</div>
+
+    <!-- Panel Honorarios -->
+    <div id="admin-panel-honorarios">
+      <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
+        <table id="tarifas-table" style="width:100%;border-collapse:collapse;font-size:13px;min-width:700px;">
+          <thead id="tarifas-thead"></thead>
+          <tbody id="tarifas-tbody"></tbody>
+        </table>
       </div>
-      <div id="tarifas-sync" style="font-size:12px;color:#10b981;font-weight:600;display:none;">✅ Guardado</div>
+      <div style="margin-top:12px;font-size:11px;color:var(--text-3);">— Celda vacía usa el precio de Público General</div>
     </div>
-    <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
-      <table id="tarifas-table" style="width:100%;border-collapse:collapse;font-size:13px;min-width:700px;">
-        <thead id="tarifas-thead"></thead>
-        <tbody id="tarifas-tbody"></tbody>
-      </table>
+
+    <!-- Panel Derechos -->
+    <div id="admin-panel-derechos" style="display:none;">
+      <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
+        <table id="derechos-table" style="width:100%;border-collapse:collapse;font-size:13px;min-width:500px;">
+          <thead><tr style="background:var(--accent-light);">
+            <th style="text-align:left;padding:10px 12px;font-size:12px;font-weight:700;border:1px solid var(--border);min-width:200px;position:sticky;left:0;background:var(--accent-light);">Concepto</th>
+            <th style="text-align:center;padding:10px 12px;font-size:12px;font-weight:700;border:1px solid var(--border);min-width:120px;">Tipo de placa</th>
+            <th style="text-align:center;padding:10px 12px;font-size:12px;font-weight:700;border:1px solid var(--border);min-width:120px;">Importe</th>
+            <th style="text-align:center;padding:10px 12px;font-size:12px;font-weight:700;border:1px solid var(--border);min-width:80px;">Activo</th>
+          </tr></thead>
+          <tbody id="derechos-tbody"></tbody>
+        </table>
+      </div>
+      <div style="margin-top:12px;font-size:11px;color:var(--text-3);">— Los cambios se guardan automáticamente en Supabase</div>
     </div>
-    <div style="margin-top:12px;font-size:11px;color:var(--text-3);">— Sin precio especial usa el precio de Público General</div>
+
+    <!-- Panel Empresas -->
+    <div id="admin-panel-empresas" style="display:none;">
+      <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
+        <table id="empresas-table" style="width:100%;border-collapse:collapse;font-size:13px;min-width:400px;">
+          <thead><tr style="background:var(--accent-light);">
+            <th style="text-align:left;padding:10px 12px;font-size:12px;font-weight:700;border:1px solid var(--border);">Nombre</th>
+            <th style="text-align:center;padding:10px 12px;font-size:12px;font-weight:700;border:1px solid var(--border);min-width:80px;">Activo</th>
+          </tr></thead>
+          <tbody id="empresas-tbody"></tbody>
+        </table>
+      </div>
+      <div style="margin-top:12px;">
+        <button onclick="agregarEmpresa()" style="padding:10px 18px;background:var(--accent);color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;">+ Nueva empresa</button>
+      </div>
+    </div>
+
   </div>
 </div>
 
