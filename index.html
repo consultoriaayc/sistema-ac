@@ -539,7 +539,7 @@ supa=supabase.createClient(SUPA_URL,SUPA_KEY);
     </div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
       <div class="save-ind" id="save-ind"><div class="save-dot"></div>
-    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.51</span><span id="save-txt">guardado</span></div>
+    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.53</span><span id="save-txt">guardado</span></div>
       <button onclick="exportarDatos()" style="padding:5px 12px;background:#059669;color:white;border:none;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Exportar</button>
       <label style="padding:5px 12px;background:#1e3a5f;color:white;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Importar<input type="file" id="import-file" accept=".json" style="display:none" onchange="importarDatos(this)"/></label>
       <div class="estado-badge">Morelos</div>
@@ -1775,8 +1775,7 @@ var TRAMITES_TARIFAS=[
 ];
 
 function renderTarifas(){
-  var empIds=[...new Set(cotHonorarios.filter(function(h){return h.id_empresa;}).map(function(h){return h.id_empresa;}))];
-  tarifasEmpresas=catEmpresas.filter(function(e){return empIds.includes(e.id_empresa);});
+  tarifasEmpresas=catEmpresas.slice().sort(function(a,b){return a.nombre.localeCompare(b.nombre);});
   var thead=document.getElementById('tarifas-thead');
   var tbody=document.getElementById('tarifas-tbody');
   if(!thead||!tbody)return;
@@ -1922,7 +1921,9 @@ function renderEmpresasAdmin(){
         +'<input type="text" value="'+e.nombre+'" data-id="'+e.id_empresa+'" onchange="guardarEmpresa(this)" '
         +'style="width:100%;padding:6px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:13px;font-family:Inter,sans-serif;background:white;"/>'
       +'</td>'
-      +'<td style="padding:8px 12px;border:1px solid var(--border);text-align:center;background:'+bg+';">✅</td>'
+      +'<td style="padding:8px 12px;border:1px solid var(--border);text-align:center;background:'+bg+';">'
+        +'<label class="switch" style="transform:scale(0.8);"><input type="checkbox"'+(e.activo!==false?' checked':'')+' data-id="'+e.id_empresa+'" onchange="toggleEmpresa(this)"/><span class="slider"></span></label>'
+      +'</td>'
       +'</tr>';
   });
   tbody.innerHTML=html;
@@ -1945,6 +1946,22 @@ async function guardarEmpresa(input){
   }catch(e){
     console.error(e);input.style.borderColor='#ef4444';
     adminSyncMsg('❌ Error al guardar','#ef4444');
+  }
+}
+
+async function toggleEmpresa(input){
+  var idEmpresa=parseInt(input.dataset.id);
+  var activo=input.checked;
+  adminSyncMsg('💾 Guardando...','#f59e0b');
+  try{
+    var res=await supa.from('empresas').update({activo:activo}).eq('id_empresa',idEmpresa);
+    if(res.error)throw res.error;
+    var idx=catEmpresas.findIndex(function(e){return e.id_empresa===idEmpresa;});
+    if(idx>=0)catEmpresas[idx].activo=activo;
+    adminSyncMsg('✅ Guardado','#10b981');
+  }catch(e){
+    console.error(e);input.checked=!activo;
+    adminSyncMsg('❌ Error','#ef4444');
   }
 }
 
