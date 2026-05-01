@@ -539,7 +539,7 @@ supa=supabase.createClient(SUPA_URL,SUPA_KEY);
     </div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
       <div class="save-ind" id="save-ind"><div class="save-dot"></div>
-    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.53</span><span id="save-txt">guardado</span></div>
+    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.54</span><span id="save-txt">guardado</span></div>
       <button onclick="exportarDatos()" style="padding:5px 12px;background:#059669;color:white;border:none;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Exportar</button>
       <label style="padding:5px 12px;background:#1e3a5f;color:white;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Importar<input type="file" id="import-file" accept=".json" style="display:none" onchange="importarDatos(this)"/></label>
       <div class="estado-badge">Morelos</div>
@@ -1509,18 +1509,18 @@ function getDerechoImporte(concepto, idTipoPlaca){
   if(id){
     // Buscar exacto: mismo concepto base Y mismo id_tipo_placa
     dr=cotDerechos.find(function(d){
-      return d.concepto.startsWith(conceptoBase) && parseInt(d.id_tipo_placa)===id;
+      return d.activo!==false && d.concepto.startsWith(conceptoBase) && parseInt(d.id_tipo_placa)===id;
     });
     // Si no encontro, buscar solo por id_tipo_placa (cualquier concepto con ese tipo)
     if(!dr){
       dr=cotDerechos.find(function(d){
-        return parseInt(d.id_tipo_placa)===id;
+        return d.activo!==false && parseInt(d.id_tipo_placa)===id;
       });
     }
   }
   if(!dr){
     dr=cotDerechos.find(function(d){
-      return d.concepto===concepto && !d.id_tipo_placa;
+      return d.activo!==false && d.concepto===concepto && !d.id_tipo_placa;
     });
   }
   return dr?parseFloat(dr.importe)||0:0;
@@ -1902,6 +1902,16 @@ async function toggleDerecho(input){
   try{
     var res=await supa.from('derechos').update({activo:activo}).eq('id_derecho',idDerecho);
     if(res.error)throw res.error;
+    // Actualizar en memoria: si inactivo remover de cotDerechos, si activo agregar
+    var globalIdx=cotDerechos.findIndex(function(d){return d.id_derecho===idDerecho;});
+    if(!activo&&globalIdx>=0){
+      cotDerechos.splice(globalIdx,1);
+    } else if(activo&&globalIdx<0){
+      var dr=content.find(function(d){return d.id_derecho===idDerecho;});
+      if(dr){dr.activo=true;cotDerechos.push(dr);}
+    } else if(activo&&globalIdx>=0){
+      cotDerechos[globalIdx].activo=true;
+    }
     adminSyncMsg('✅ Guardado','#10b981');
   }catch(e){
     console.error(e);input.checked=!activo;
@@ -2202,11 +2212,7 @@ function setSyncStatus(tipo,txt){const pill=document.getElementById('sync-pill')
 function poblarSelects(){
   const ids=['alta-empresa','ref-empresa','cam-empresa','pla-empresa','baja-empresa','ver-empresa','per-empresa','circ-empresa'];
   // Obtener empresas con precio especial del estado actual
-  var empresasConPrecio=[];
-  if(cotHonorarios.length){
-    var idsConPrecio=[...new Set(cotHonorarios.filter(function(h){return h.id_empresa;}).map(function(h){return h.id_empresa;}))];
-    empresasConPrecio=catEmpresas.filter(function(e){return idsConPrecio.includes(e.id_empresa);});
-  }
+  var empresasConPrecio=catEmpresas.filter(function(e){return e.activo!==false;});
   ids.forEach(function(id){
     const sel=document.getElementById(id);if(!sel)return;
     const val=sel.value;
