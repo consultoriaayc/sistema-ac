@@ -539,7 +539,7 @@ supa=supabase.createClient(SUPA_URL,SUPA_KEY);
     </div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
       <div class="save-ind" id="save-ind"><div class="save-dot"></div>
-    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.55</span><span id="save-txt">guardado</span></div>
+    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.56</span><span id="save-txt">guardado</span></div>
       <button onclick="exportarDatos()" style="padding:5px 12px;background:#059669;color:white;border:none;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Exportar</button>
       <label style="padding:5px 12px;background:#1e3a5f;color:white;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Importar<input type="file" id="import-file" accept=".json" style="display:none" onchange="importarDatos(this)"/></label>
       <div class="estado-badge">Morelos</div>
@@ -2308,7 +2308,7 @@ function calcAlta(){
   }
 
   // Derechos desde Supabase
-  const derAlt=getDerechoImporte('Derechos de alta',idTipoPlaca)||1290;
+  const derAlt=getDerechoImporte('Derechos de alta',idTipoPlaca);
 
   if(tipo==='nuevo'){
     const tenMonto=procesarTenencia('alta-fecha','alta-alerta-dias','alta-tenencia-campo','alta-tenencia-monto');
@@ -2354,7 +2354,7 @@ function calcAlta(){
     if(tenMonto>0){items.push({label:'Tenencia',val:tenMonto});total+=tenMonto;}
     items.push({label:'Derechos de alta',val:derAlt});total+=derAlt;
     if(!yaBaja){
-      const bajaFor=getDerechoImporte('Baja foranea',null)||528;
+      const bajaFor=getDerechoImporte('Baja foranea',null);
       items.push({label:'Baja foranea',val:bajaFor});total+=bajaFor;
     }
     if(actaOn){
@@ -2399,7 +2399,7 @@ function calcRefrendo(){
   var refPorTipo={};
   refVehiculos.forEach(function(v){
     var concepto='Refrendo '+v.tipo.charAt(0).toUpperCase()+v.tipo.slice(1).toLowerCase();
-    var imp=getDerechoImporte(concepto,v.idTipo)||880;
+    var imp=getDerechoImporte(concepto,v.idTipo);
     if(!refPorTipo[v.tipo])refPorTipo[v.tipo]={count:0,imp:imp,nombre:v.tipo};
     refPorTipo[v.tipo].count++;
   });
@@ -2436,10 +2436,10 @@ function calcCambio(){
   if(!pago2026){
     // Refrendo 2026 segun tipo de placa
     var refConcepto=tipoPlacaNombre?'Refrendo '+tipoPlacaNombre.charAt(0)+tipoPlacaNombre.slice(1).toLowerCase():'Refrendo Auto';
-    var refImp=getDerechoImporte(refConcepto,idTipoPlaca)||880;
+    var refImp=getDerechoImporte(refConcepto,idTipoPlaca);
     items.push({label:'Refrendo 2026 ('+tipoPlacaNombre+')',val:refImp});total+=refImp;
   } else {
-    const reimp=getDerechoImporte('Reimpresión tarjeta circulación',null)||453;
+    const reimp=getDerechoImporte('Reimpresión tarjeta circulación',null);
     items.push({label:'Reimpresion de tarjeta de circulacion',val:reimp});total+=reimp;
   }
   if(valorLibro>0){
@@ -2463,8 +2463,8 @@ function calcPlacas(){
   const adeudoMonto=parseFloat(document.getElementById('pla-adeudo-monto').value)||0;
   const actaOn=document.getElementById('pla-acta-chk')?.checked||false;
   const HON_PLA=getHonorarioImporte(7,idCliente)||2500;
-  const derAlt=getDerechoImporte('Reposición de placa',idTipoPlaca)||getDerechoImporte('Derechos de alta',idTipoPlaca)||1290;
-  const derBaj=getDerechoImporte('Baja',null)||253;
+  const derAlt=getDerechoImporte('Reposición de placa',idTipoPlaca)||getDerechoImporte('Derechos de alta',idTipoPlaca);
+  const derBaj=getDerechoImporte('Baja',null);
   const items=[];let total=0;let baseIva=0;
   items.push({label:'Derechos de alta',val:derAlt});total+=derAlt;
   items.push({label:'Derechos de baja',val:derBaj});total+=derBaj;
@@ -2491,7 +2491,7 @@ function calcBaja(){
   const adeudoMonto=parseFloat(document.getElementById('baja-adeudo-monto').value)||0;
   const idTipoPlaca=document.getElementById('baja-veh-tipo')?parseInt(document.getElementById('baja-veh-tipo').value)||null:null;
   const HON_BAJ=getHonorarioImporte(8,idCliente)||1900;
-  const derBaj=getDerechoImporte('Derechos de alta',idTipoPlaca)||235;
+  const derBaj=getDerechoImporte('Derechos de alta',idTipoPlaca);
   const items=[];let total=0;let baseIva=0;
   items.push({label:'Derechos de baja definitiva',val:derBaj});total+=derBaj;
   if(!pago2026){items.push({label:'Derechos refrendo 2026',val:880});total+=880;}
@@ -2938,7 +2938,7 @@ function calcVerif(){
   const multa=document.getElementById('ver-multa-chk').checked;
   const refrendo=document.getElementById('ver-refrendo-chk').checked;
   const HON_VER=getHonorarioImporte(9,idCliente)||490;
-  const derVer=getDerechoImporte('Verificación',null)||765;
+  const derVer=getDerechoImporte('Verificación',null);
   const items=[];let total=0;let baseIva=0;
   items.push({label:'Derechos de verificacion',val:derVer});total+=derVer;
   if(multa){items.push({label:'Multa por no verificar',val:1642});total+=1642;}
