@@ -539,7 +539,7 @@ supa=supabase.createClient(SUPA_URL,SUPA_KEY);
     </div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
       <div class="save-ind" id="save-ind"><div class="save-dot"></div>
-    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.57</span><span id="save-txt">guardado</span></div>
+    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.58</span><span id="save-txt">guardado</span></div>
       <button onclick="exportarDatos()" style="padding:5px 12px;background:#059669;color:white;border:none;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Exportar</button>
       <label style="padding:5px 12px;background:#1e3a5f;color:white;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Importar<input type="file" id="import-file" accept=".json" style="display:none" onchange="importarDatos(this)"/></label>
       <div class="estado-badge">Morelos</div>
@@ -2491,9 +2491,9 @@ function calcBaja(){
   const adeudoMonto=parseFloat(document.getElementById('baja-adeudo-monto').value)||0;
   const idTipoPlaca=document.getElementById('baja-veh-tipo')?parseInt(document.getElementById('baja-veh-tipo').value)||null:null;
   const HON_BAJ=getHonorarioImporte(8,idCliente)||1900;
-  const derBaj=getDerechoImporte('Derechos de alta',idTipoPlaca);
+  const derBaj=getDerechoImporte('Baja',null);
   const items=[];let total=0;let baseIva=0;
-  items.push({label:'Derechos de baja definitiva',val:derBaj});total+=derBaj;
+  if(derBaj>0){items.push({label:'Derechos de baja',val:derBaj});total+=derBaj;}
   if(!pago2026){items.push({label:'Derechos refrendo 2026',val:880});total+=880;}
   if(adeudoOn&&adeudoMonto>0){items.push({label:'Adeudos anteriores',val:adeudoMonto});total+=adeudoMonto;}
   items.push({label:'Honorarios',val:HON_BAJ});total+=HON_BAJ;baseIva+=HON_BAJ;
