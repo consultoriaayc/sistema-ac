@@ -539,7 +539,7 @@ supa=supabase.createClient(SUPA_URL,SUPA_KEY);
     </div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
       <div class="save-ind" id="save-ind"><div class="save-dot"></div>
-    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.58</span><span id="save-txt">guardado</span></div>
+    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.59</span><span id="save-txt">guardado</span></div>
       <button onclick="exportarDatos()" style="padding:5px 12px;background:#059669;color:white;border:none;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Exportar</button>
       <label style="padding:5px 12px;background:#1e3a5f;color:white;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Importar<input type="file" id="import-file" accept=".json" style="display:none" onchange="importarDatos(this)"/></label>
       <div class="estado-badge">Morelos</div>
@@ -868,7 +868,7 @@ supa=supabase.createClient(SUPA_URL,SUPA_KEY);
     <div class="card">
       <div class="card-title">Detalles de la verificación</div>
       <div class="toggle-row">
-        <div class="toggle-info"><div class="toggle-label">¿El vehículo tiene multa por verificación?</div><div class="toggle-sub">Multa: $1,642</div></div>
+        <div class="toggle-info"><div class="toggle-label">¿El vehículo tiene multa por verificación?</div><div class="toggle-sub" id="ver-multa-lbl">Multa por no verificar</div></div>
         <label class="switch"><input type="checkbox" id="ver-multa-chk" onchange="calcVerif()"/><span class="slider"></span></label>
       </div>
       <div class="toggle-row">
@@ -2941,7 +2941,8 @@ function calcVerif(){
   const derVer=getDerechoImporte('Verificación',null);
   const items=[];let total=0;let baseIva=0;
   items.push({label:'Derechos de verificacion',val:derVer});total+=derVer;
-  if(multa){items.push({label:'Multa por no verificar',val:1642});total+=1642;}
+  const multaVal=getDerechoImporte('Multa por no verificar',null);
+  if(multa&&multaVal>0){items.push({label:'Multa por no verificar',val:multaVal});total+=multaVal;}
   if(refrendo){items.push({label:'Refrendo pendiente',val:880});total+=880;}
   items.push({label:'Honorarios',val:HON_VER});total+=HON_VER;baseIva+=HON_VER;
   if(factura){const iva=Math.round(baseIva*0.16*100)/100;items.push({label:'IVA 16%',val:iva,esIva:true});total+=iva;}
