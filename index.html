@@ -539,7 +539,7 @@ supa=supabase.createClient(SUPA_URL,SUPA_KEY);
     </div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
       <div class="save-ind" id="save-ind"><div class="save-dot"></div>
-    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.60</span><span id="save-txt">guardado</span></div>
+    <span style="font-size:10px;color:var(--text-3);padding:0 6px;align-self:center;">v2.4.22.61</span><span id="save-txt">guardado</span></div>
       <button onclick="exportarDatos()" style="padding:5px 12px;background:#059669;color:white;border:none;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Exportar</button>
       <label style="padding:5px 12px;background:#1e3a5f;color:white;border-radius:20px;font-size:11px;font-weight:600;font-family:Inter,sans-serif;cursor:pointer;">Importar<input type="file" id="import-file" accept=".json" style="display:none" onchange="importarDatos(this)"/></label>
       <div class="estado-badge">Morelos</div>
@@ -686,7 +686,7 @@ supa=supabase.createClient(SUPA_URL,SUPA_KEY);
       </div>
       <div id="alta-seminuevo-valor-campo" class="field mt8 hidden"><label>Valor comercial Libro Azul ($)</label><input type="number" id="alta-seminuevo-valor" placeholder="Consultar en Libro Azul" min="0" oninput="calcAlta()"/></div>
       <div class="toggle-row">
-        <div class="toggle-info"><div class="toggle-label">¿Levantamos nosotros el acta de extravio?</div><div class="toggle-sub">Acta $900 + Sellos de no infraccion $880</div></div>
+        <div class="toggle-info"><div class="toggle-label">¿Levantamos nosotros el acta de extravio?</div><div class="toggle-sub">Acta de extravío + Sellos de no infracción</div></div>
         <label class="switch"><input type="checkbox" id="alta-sem-acta-chk" onchange="calcAlta()"/><span class="slider"></span></label>
       </div>
     </div>
@@ -706,7 +706,7 @@ supa=supabase.createClient(SUPA_URL,SUPA_KEY);
         <label class="switch"><input type="checkbox" id="alta-foraneo-baja-chk" onchange="calcAlta()"/><span class="slider"></span></label>
       </div>
       <div class="toggle-row">
-        <div class="toggle-info"><div class="toggle-label">¿Levantamos nosotros el acta de extravio?</div><div class="toggle-sub">Acta $900 + Sellos de no infraccion $880</div></div>
+        <div class="toggle-info"><div class="toggle-label">¿Levantamos nosotros el acta de extravio?</div><div class="toggle-sub">Acta de extravío + Sellos de no infracción</div></div>
         <label class="switch"><input type="checkbox" id="alta-for-acta-chk" onchange="calcAlta()"/><span class="slider"></span></label>
       </div>
       <div class="toggle-row mt8">
@@ -818,7 +818,7 @@ supa=supabase.createClient(SUPA_URL,SUPA_KEY);
     <div class="card">
       <div class="card-title">Estado del refrendo</div>
       <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">¿Ya pagó refrendo 2026?</div><div class="toggle-sub">Verificar antes de iniciar</div></div><label class="switch"><input type="checkbox" id="pla-2026-chk" onchange="togglePla2026()"/><span class="slider"></span></label></div>
-      <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">¿Levantamos nosotros el acta de extravio?</div><div class="toggle-sub">Acta $900 + Sellos de no infraccion $880</div></div><label class="switch"><input type="checkbox" id="pla-acta-chk" onchange="calcPlacas()"/><span class="slider"></span></label></div>
+      <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">¿Levantamos nosotros el acta de extravio?</div><div class="toggle-sub">Acta de extravío + Sellos de no infracción</div></div><label class="switch"><input type="checkbox" id="pla-acta-chk" onchange="calcPlacas()"/><span class="slider"></span></label></div>
       <div id="pla-adeudo-aviso" class="alert alert-amber mt8">⚠️ Verificar adeudos pendientes antes de iniciar el trámite de placas.</div>
       <a id="pla-movilidad-link" href="https://pagos.hacienda.morelos.gob.mx/" target="_blank" class="movilidad-link"><svg viewBox="0 0 24 24"><path d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>Verificar en sistema Morelos</a>
       <div class="toggle-row mt8"><div class="toggle-info"><div class="toggle-label">¿Tiene adeudos adicionales?</div><div class="toggle-sub">Multas u otros conceptos</div></div><label class="switch"><input type="checkbox" id="pla-adeudo-chk" onchange="togglePlaAdeudo()"/><span class="slider"></span></label></div>
@@ -1767,7 +1767,9 @@ var TRAMITES_TARIFAS=[
   {id:10,nombre:'Permiso de Carga'},
   {id:11,nombre:'Revista mecánica'},
   {id:12,nombre:'Revista mecánica S/Presentar'},
-  {id:13,nombre:'Validación tenencias otro estado'}
+  {id:13,nombre:'Validación tenencias otro estado'},
+  {id:14,nombre:'Acta de extravío'},
+  {id:15,nombre:'Sellos de no infracción'}
 ];
 
 function renderTarifas(){
@@ -2332,10 +2334,10 @@ function calcAlta(){
     const grat=gratificacion(valorFact);
     if(grat>0){items.push({label:'Gratificacion (valor > $999,999)',val:grat});total+=grat;baseIva+=grat;}
     if(actaOn){
-      const actaImp=getConceptoImporte('Acta de extravío')||600;
-      const sellosImp=getConceptoImporte('Sellos de no infracción')||880;
-      items.push({label:'Acta de extravio',val:actaImp});total+=actaImp;baseIva+=actaImp;
-      items.push({label:'Sellos de no infraccion',val:sellosImp});total+=sellosImp;baseIva+=sellosImp;
+      const actaImp=getHonorarioImporte(14,idCliente);
+      const sellosImp=getHonorarioImporte(15,idCliente);
+      if(actaImp>0){items.push({label:'Acta de extravío',val:actaImp});total+=actaImp;baseIva+=actaImp;}
+      if(sellosImp>0){items.push({label:'Sellos de no infracción',val:sellosImp});total+=sellosImp;baseIva+=sellosImp;}
     }
     if(conCambio){
       const valorLibro=parseFloat(document.getElementById('alta-seminuevo-valor').value)||0;
@@ -2359,10 +2361,10 @@ function calcAlta(){
       if(bajaFor>0){items.push({label:'Baja foránea',val:bajaFor});total+=bajaFor;}
     }
     if(actaOn){
-      const actaImp=getConceptoImporte('Acta de extravío')||600;
-      const sellosImp=getConceptoImporte('Sellos de no infracción')||880;
-      items.push({label:'Acta de extravio',val:actaImp});total+=actaImp;baseIva+=actaImp;
-      items.push({label:'Sellos de no infraccion',val:sellosImp});total+=sellosImp;baseIva+=sellosImp;
+      const actaImp=getHonorarioImporte(14,idCliente);
+      const sellosImp=getHonorarioImporte(15,idCliente);
+      if(actaImp>0){items.push({label:'Acta de extravío',val:actaImp});total+=actaImp;baseIva+=actaImp;}
+      if(sellosImp>0){items.push({label:'Sellos de no infracción',val:sellosImp});total+=sellosImp;baseIva+=sellosImp;}
     }
     if(tenenciasOtroEstado){
       const valImp=getHonorarioImporte(13,idCliente);
@@ -2471,10 +2473,10 @@ function calcPlacas(){
   items.push({label:'Derechos de baja',val:derBaj});total+=derBaj;
   if(!pago2026){items.push({label:'Refrendo 2026 pendiente',val:880});total+=880;}
   if(actaOn){
-    const actaImp=getConceptoImporte('Acta de extravío')||600;
-    const sellosImp=getConceptoImporte('Sellos de no infracción')||880;
-    items.push({label:'Acta de extravio',val:actaImp});total+=actaImp;baseIva+=actaImp;
-    items.push({label:'Sellos de no infraccion',val:sellosImp});total+=sellosImp;baseIva+=sellosImp;
+    const actaImp=getHonorarioImporte(14,idCliente);
+    const sellosImp=getHonorarioImporte(15,idCliente);
+    if(actaImp>0){items.push({label:'Acta de extravío',val:actaImp});total+=actaImp;baseIva+=actaImp;}
+    if(sellosImp>0){items.push({label:'Sellos de no infracción',val:sellosImp});total+=sellosImp;baseIva+=sellosImp;}
   }
   if(adeudoOn&&adeudoMonto>0){items.push({label:'Adeudos adicionales',val:adeudoMonto});total+=adeudoMonto;}
   items.push({label:'Honorarios',val:HON_PLA});total+=HON_PLA;baseIva+=HON_PLA;
